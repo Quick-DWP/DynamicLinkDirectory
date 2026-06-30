@@ -1,0 +1,10 @@
+.history/
+.vscode/
+
+AI_TemplateCreation.md
+
+Backend/public/dist/
+
+*.log
+.DS_Store
+Thumbs.db

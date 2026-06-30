@@ -1,0 +1,12 @@
+{
+  "app": {
+    "name": "Dynamic Link Directory",
+    "subtitle": "A simple web portal — browse and jump to the links you need."
+  },
+  "api": {
+    "base_url": ""
+  },
+  "_comments": {
+    "api.base_url": "Leave empty to use the current origin (recommended when backend serves frontend). Set explicitly only for cross-origin API calls."
+  }
+}
