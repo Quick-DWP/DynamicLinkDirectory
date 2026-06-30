@@ -163,6 +163,11 @@
 - Verified: smoke against a running server passes (health/meta/settings/directory 200); exit 0.
 - Next action: batch (1,2,5,6,9,10) complete.
 
+### 2026-06-30 14:02
+
+- Summary: Removed the GitHub Actions CI workflow (`.github/workflows/ci.yml`) at the user's request. Kept the smoke test (`Backend/scripts/smoke.mjs` / `npm run smoke`) as a manual check.
+- Files: deleted `.github/workflows/ci.yml`.
+
 ---
 
 ## Template Updates
