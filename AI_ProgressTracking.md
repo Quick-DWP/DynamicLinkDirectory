@@ -140,6 +140,11 @@
 - Summary: (#1) Browser tab now reflects site settings — `document.title` syncs to `site_title`, and the tab favicon uses the uploaded logo when present (falls back to /favicon.svg).
 - Files: `Frontend/src/App.tsx`.
 
+### 2026-06-30 13:52
+
+- Summary: (#2 data cleanup) Deleted the orphaned legacy "what" link (null category) via the admin API (bounded delete by uuid; raw SQL mass-delete was blocked by the safety classifier). No code change. (#5) Click analytics: Links tab gained a sort control (manual order / most opened) and a "N total opens" stat; DnD reorder only when sorted by manual order with no search.
+- Files: `Frontend/src/pages/AdminPage.tsx`.
+
 ---
 
 ## Template Updates

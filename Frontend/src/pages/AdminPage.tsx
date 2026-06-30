@@ -128,6 +128,7 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
 
   const [linkFilter, setLinkFilter] = useState('');   // category_id or ''
   const [linkSearch, setLinkSearch] = useState('');
+  const [linkSort, setLinkSort] = useState<'order' | 'clicks'>('order');
 
   const [catDrag, setCatDrag] = useState<number | null>(null);
   const [catOver, setCatOver] = useState<number | null>(null);
@@ -362,15 +363,21 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
 
   const categoryName = (id: string | null) => categories.find((c) => c.uuid === id)?.name || 'Uncategorized';
 
-  // Displayed links: filter by category, then by search text.
+  // Displayed links: filter by category, then by search text, then sort.
   const displayedLinks = useMemo(() => {
     const q = linkSearch.trim().toLowerCase();
-    return links.filter((l) => {
+    const filtered = links.filter((l) => {
       if (linkFilter && (l.category_id || '') !== linkFilter) return false;
       if (!q) return true;
       return l.title.toLowerCase().includes(q) || l.url.toLowerCase().includes(q) || l.description.toLowerCase().includes(q);
     });
-  }, [links, linkFilter, linkSearch]);
+    if (linkSort === 'clicks') {
+      return [...filtered].sort((a, b) => b.click_count - a.click_count);
+    }
+    return filtered;
+  }, [links, linkFilter, linkSearch, linkSort]);
+
+  const totalClicks = useMemo(() => links.reduce((sum, l) => sum + l.click_count, 0), [links]);
 
   // New-link category mirrors the category selected on the left (or the first one).
   // While editing an existing link, leave its own category alone.
@@ -387,8 +394,8 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
     return links.find((l) => l.uuid !== linkSelected && normalizeUrl(l.url) === n) || null;
   }, [links, linkForm.url, linkSelected]);
 
-  // Drag is only meaningful on the unsearched list (stable indices map to real order).
-  const linkDragEnabled = linkSearch.trim() === '';
+  // Drag is only meaningful on the unsearched list in manual order.
+  const linkDragEnabled = linkSearch.trim() === '' && linkSort === 'order';
 
   const dropLink = (to: number) => guard('link', async () => {
     if (linkDrag === null || linkDrag === to) { setLinkDrag(null); setLinkOver(null); return; }
@@ -579,9 +586,15 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
               <option value="">All categories</option>
               {categories.map((c) => <option key={c.uuid} value={c.uuid}>{c.name}</option>)}
             </select>
+            <select value={linkSort} onChange={(e) => setLinkSort(e.target.value as 'order' | 'clicks')} aria-label="Sort links">
+              <option value="order">Sort: manual order</option>
+              <option value="clicks">Sort: most opened</option>
+            </select>
             <input value={linkSearch} onChange={(e) => setLinkSearch(e.target.value)} placeholder="Search links..." aria-label="Search links" />
           </div>
-          <p className="dld-hint">{linkDragEnabled ? 'Drag to reorder.' : 'Clear search to reorder by dragging.'}</p>
+          <p className="dld-hint">
+            {totalClicks} total open{totalClicks === 1 ? '' : 's'}. {linkDragEnabled ? 'Drag to reorder.' : 'Switch to manual order and clear search to reorder by dragging.'}
+          </p>
 
           <div className="item-list">
             {displayedLinks.map((link, i) => (
