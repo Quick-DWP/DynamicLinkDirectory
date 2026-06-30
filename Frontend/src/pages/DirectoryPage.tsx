@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { apiUrl } from '../config';
 import { fetchSiteSettings, normalizeTheme, type LayoutTheme } from '../settings';
 import type { DirectoryGroup, Link } from '../types';
+import LinkIcon from '../components/LinkIcon';
 
 const keyOf = (group: DirectoryGroup) => group.uuid ?? 'uncategorized';
 
@@ -112,7 +113,7 @@ export default function DirectoryPage() {
       // Launcher style: the whole tile is the link.
       return (
         <a key={link.uuid} className="link-tile" title={link.title} aria-label={`Open ${link.title}`} {...linkAnchorProps(link)}>
-          <span className="tile-icon">{link.icon || '🔗'}</span>
+          <span className="tile-icon"><LinkIcon link={link} size={30} /></span>
           <span className="tile-title">{link.title}</span>
         </a>
       );
@@ -121,7 +122,7 @@ export default function DirectoryPage() {
     if (theme === 'compact') {
       return (
         <div className="link-row" key={link.uuid}>
-          <span className="lr-icon" aria-hidden="true">{link.icon || '🔗'}</span>
+          <span className="lr-icon" aria-hidden="true"><LinkIcon link={link} size={18} /></span>
           <div className="lr-main">
             <span className="lr-title">{link.title}</span>
             <span className="lr-host">{hostnameOf(link.url)}</span>
@@ -137,7 +138,7 @@ export default function DirectoryPage() {
     return (
       <div className="item-card link-card" key={link.uuid}>
         <div className="link-main">
-          <strong>{link.icon ? `${link.icon} ` : ''}{link.title}</strong>
+          <strong className="link-title"><LinkIcon link={link} size={18} /> {link.title}</strong>
           {link.description ? <span>{link.description}</span> : null}
           <div className="pill-row compact">
             <span className="pill">{hostnameOf(link.url)}</span>

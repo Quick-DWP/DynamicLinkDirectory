@@ -18,10 +18,16 @@ v1 + first refinement pass (auth, DnD, search, click tracking) are built and ver
   `Sessions` (user_id FK, token, expires_at). Category hasMany Links (delete → links' category_id null);
   User hasMany Sessions (cascade delete).
 - **Auth**: full accounts. `POST /api/auth/login` → opaque bearer token (stored in `sessions`),
-  `POST /api/auth/logout`, `GET /api/auth/me`. `fastify.authenticate` preHandler (app/plugins/auth.js)
-  guards ALL `/api/categories` and `/api/links` routes. Token sent as `Authorization: Bearer`.
-  Default admin seeded from `config.auth.default_admin` (**admin / admin123 — change this**).
+  `POST /api/auth/logout`, `GET /api/auth/me`, `PATCH /api/auth/password` (change own password).
+  `fastify.authenticate` preHandler (app/plugins/auth.js) guards ALL `/api/categories`, `/api/links`,
+  `/api/users` routes. Token sent as `Authorization: Bearer`. Default admin seeded from
+  `config.auth.default_admin` (admin / admin123 — change via the in-app Account panel).
   Frontend stores token in localStorage (`dld_token`); `/admin` shows a login gate.
+  **Login rate limit**: in-memory per ip+username; lock after `config.auth.login_rate_limit.max_attempts`
+  (default 5) → 429 + Retry-After (window/lockout default 15 min each).
+  **User management** (admin): `/api/users` CRUD (`user.route.js`); last active admin can't be
+  deleted/deactivated/demoted; can't delete self. Admin UI has Account (change password) + Users panels.
+  **Session cleanup**: cron (`app/plugins/cron.js`) purges expired sessions daily 03:00 + once on boot.
 - **Public API** (no auth): `GET /api/directory`, `POST /api/links/:uuid/click` (increments click_count),
   `GET /api/meta`, `GET /api/health`.
 - **Admin API** (auth required): `/api/categories` + `/api/links` — GET list, POST, PATCH /:uuid,
@@ -31,9 +37,12 @@ v1 + first refinement pass (auth, DnD, search, click tracking) are built and ver
   `site_subtitle`, `layout_theme`, `theme_color`, `shell_layout`, `theme_palette`. Rows written only on save;
   unsaved keys fall back to defaults. Frontend helpers in `Frontend/src/settings.ts` (registries + resolvers).
 - **Logo**: stored as a BYTEA blob in `dld_dev.site_assets` (key `logo`, mime_type, data, size). Routes (in
-  setting.route.js): `GET /api/settings/logo` (public, serves bytes), `POST /api/settings/logo` (admin, body
-  `{ mime_type, data(base64) }`, 5 MB cap → 413, route bodyLimit 8 MB), `DELETE /api/settings/logo` (admin).
-  Shown center-cropped 1:1 in the topbar brand + classic hero (`object-fit: cover`). Admin has upload/preview/remove.
+  setting.route.js): `GET /api/settings/logo` (public, serves bytes with `nosniff` + sandbox CSP),
+  `POST /api/settings/logo` (admin, body `{ mime_type, data(base64) }`, 5 MB cap → 413, route bodyLimit 8 MB,
+  magic-byte check vs declared MIME), `DELETE /api/settings/logo` (admin). Shown center-cropped 1:1 in the
+  topbar brand + classic hero (`object-fit: cover`). Admin has upload/preview/remove.
+- **Link icons**: `LinkIcon` shows the link's emoji if set, else the site favicon (Google s2 service),
+  falling back to 🔗. Link form validates URL format on save + warns on duplicate URLs (non-blocking).
 - **Layout width**: content is full-width (the 1160px cap was removed from `.app-frame` + `.topbar-*`).
 - **Theming (4 admin-selectable dimensions, all in Admin → Site settings, applied live):**
   - `shell_layout` — whole-site chrome: `classic` (hero) or `topbar` (sticky app bar). Rendered in App.tsx.
@@ -71,14 +80,19 @@ per-category default-expanded, collapsible directory, site settings, selectable 
 directory layout + accent color + background palette (palette also themes panel/card/border surfaces),
 visual pickers, toggle switches, scoped feedback, list New buttons, category-required links.
 
+Hardening pass done (2026-06-30): change-password + user management, login rate limiting,
+logo magic-byte + sandbox-CSP hardening, expired-session purge cron, link URL validation +
+duplicate warning, auto-favicon.
+
 Still open / nice-to-have:
-- **Change the default admin password** (admin/admin123) and ideally add a user-management UI.
+- **Still change the default admin password** (admin/admin123) on real deployments — now doable in-app (Account panel).
 - A "Custom" palette option backed by two color pickers (presets only for now).
 - Optional extra shells (e.g. left-rail sidebar) — add to `SHELL_LAYOUTS` + branch in App.tsx.
 - Legacy `links.category_id = null` rows still exist (the "what" link); directory groups them as "Other".
-- Periodic cleanup of expired `sessions` rows (currently purged lazily on use).
 - HTTPS/secure cookie option instead of localStorage token, if deployed beyond LAN.
 - DnD across categories for links (currently reorders within the current filter only).
+- Auto-favicon uses an external service (Google s2) — won't resolve internal-only hosts; consider a self-hosted/proxy option or a toggle.
+- A test + CI smoke check (suggestion #8, not yet done).
 
 Do not store long implementation history here. Put that in `AI_ProgressTracking.md`.
 

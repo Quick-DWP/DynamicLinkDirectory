@@ -96,6 +96,13 @@
 - Verified: build/type-check clean.
 - Next action: #10 auto-favicon for links.
 
+### 2026-06-30 12:36
+
+- Summary: #10 — auto-favicon. New `LinkIcon` component: shows the link's custom emoji if set, else the site favicon via Google s2 (`https://www.google.com/s2/favicons?domain=<host>&sz=64`), falling back to 🔗 on load error. Used in all directory layouts (cards/compact/tiles). Note: relies on an external favicon service and won't resolve internal-only hosts.
+- Files touched: `Frontend/src/components/LinkIcon.tsx`, `DirectoryPage.tsx`, `index.css`.
+- Verified: build/type-check clean.
+- Next action: hardening/quality batch (1,2,3,4,7,10) complete.
+
 ---
 
 ## Template Updates

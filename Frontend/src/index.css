@@ -1904,6 +1904,25 @@ select:disabled {
 	font-size: 1rem;
 }
 
+/* Link icon (emoji or favicon) */
+.link-favicon {
+	border-radius: 4px;
+	object-fit: contain;
+	vertical-align: middle;
+	display: inline-block;
+}
+
+.link-icon-emoji {
+	line-height: 1;
+	vertical-align: middle;
+}
+
+.link-title {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+}
+
 .link-main span {
 	color: var(--muted);
 	line-height: 1.45;
