@@ -151,6 +151,11 @@
 - Files: `setting.route.js`, `settings.ts`, `components/LinkIcon.tsx`, `DirectoryPage.tsx`, `AdminPage.tsx`.
 - Verified: default true; PUT false persists + re-reads false; reset.
 
+### 2026-06-30 13:56
+
+- Summary: (#9) Added a React `ErrorBoundary` (class component) wrapping `<App>` in main.tsx; render errors now show a friendly "This page hit an error" panel with a Reload button instead of a blank screen.
+- Files: `Frontend/src/components/ErrorBoundary.tsx` (new), `Frontend/src/main.tsx`.
+
 ---
 
 ## Template Updates
