@@ -119,6 +119,7 @@ export default async function authRoutes(fastify) {
     }
 
     let email
+    let name
     try {
       const verified = await verifyAzureIdToken(idToken, {
         tenantId: az.tenant_id,
@@ -126,6 +127,7 @@ export default async function authRoutes(fastify) {
         audience: az.audience || '',
       })
       email = verified.email
+      name = verified.name
     } catch {
       return reply.code(401).send({ ok: false, message: 'Microsoft sign-in could not be verified.' })
     }
@@ -133,14 +135,30 @@ export default async function authRoutes(fastify) {
       return reply.code(401).send({ ok: false, message: 'Microsoft account has no email.' })
     }
 
-    // Case-insensitive email match against provisioned users.
-    const user = await db.Users.findOne({
+    // Case-insensitive email match against existing users.
+    let user = await db.Users.findOne({
       where: sqlWhere(fn('lower', col('email')), email.toLowerCase()),
     })
+
     if (!user) {
-      return reply.code(403).send({ ok: false, message: 'This Microsoft account is not authorized in this system.' })
-    }
-    if (!user.is_active) {
+      // Auto-provision (JIT) new Microsoft sign-ins as viewers, unless disabled.
+      if (az.auto_provision === false) {
+        return reply.code(403).send({ ok: false, message: 'This Microsoft account is not authorized in this system.' })
+      }
+      let username = email
+      for (let n = 1; await db.Users.findOne({ where: { username } }); n += 1) {
+        username = `${email}-${n}`
+      }
+      user = await db.Users.create({
+        username,
+        email,
+        display_name: name || email,
+        password_hash: null,
+        password_salt: null,
+        role: 'viewer',
+        is_active: true,
+      })
+    } else if (!user.is_active) {
       return reply.code(403).send({ ok: false, message: 'This account is inactive.' })
     }
 

@@ -36,9 +36,11 @@ site settings (title/subtitle/logo), not hard-coded.
   deleted/deactivated/demoted; can't delete self. Admin UI has Account (change password) + Users panels.
   **Session cleanup**: cron (`app/plugins/cron.js`) purges expired sessions daily 03:00 + once on boot.
   **Microsoft (Azure AD) sign-in**: `GET /api/auth/azure-config` (public: enabled + tenant/client id),
-  `POST /api/auth/azure-login` (verifies MS ID token via jose/JWKS in `lib/azure.js`, then authorizes by
-  matching `users.email` case-insensitively → issues a normal session; 403 if not provisioned). Azure only
-  authenticates; the users table authorizes. Users now have an `email` and password is optional (MS-only accounts).
+  `POST /api/auth/azure-login` (verifies MS ID token via jose/JWKS in `lib/azure.js`, then matches
+  `users.email` case-insensitively). **JIT auto-provision**: an unknown Microsoft sign-in is auto-created as a
+  **viewer** (username = email, display_name from the token `name` claim); set `azure.auto_provision:false` to
+  instead 403 unknown accounts. Single-tenant app ⇒ only the QT tenant's accounts can authenticate.
+  Users now have an `email` and password is optional (MS-only accounts).
   Config in `config.auth.azure` (tenant_id/client_id only — NO client secret; the SPA/ID-token flow doesn't use it).
   Frontend: MSAL redirect (`src/azure.ts`), handled in main.tsx; "Continue with Microsoft" on the login gate.
   Entra: register the app **origin** as a **SPA** redirect URI (e.g. http://localhost:3000 / the deployed origin).

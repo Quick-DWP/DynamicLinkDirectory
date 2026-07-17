@@ -198,6 +198,14 @@
 - Verified: boot + 6 patches clean; azure-config returns ids; azure-login no-token 400 / bad-token 401; password login OK; MS-only user (email, no password) created; neither-provided 400; duplicate email (diff case) 409. Live MS redirect + the 403-not-authorized path need a real browser sign-in with the Entra SPA redirect URI configured.
 - Next action: user provisions their MS email as an admin user, configures the Entra SPA redirect URI, and tests the live "Continue with Microsoft" flow.
 
+### 2026-07-17 15:20 — Azure JIT provisioning
+
+- Summary: Changed azure-login from "must be pre-provisioned (403)" to just-in-time provisioning: an unknown Microsoft sign-in is auto-created as a **viewer** — username = email (uniqued if collision), display_name from the token `name` claim, email set, password null. Existing users keep their role. New config flag `azure.auto_provision` (default true; set false to restore the 403 behavior). Single-tenant app registration means only the QT tenant can authenticate, which is the access boundary.
+- Files: `auth.route.js`, `config.json` (local), `config.example.json`, AI docs.
+- Verified: no regression — bad token 401, password login 200, azure-config enabled. (Live JIT create needs a real MS sign-in.)
+- Note: app port changed locally to 9008 → Entra SPA redirect URI must be `http://localhost:9008` (origin follows the port).
+- Next action: configure Entra SPA redirect URI for the running origin; test live MS login (first sign-in should auto-create a viewer).
+
 ---
 
 ## Template Updates

@@ -46,7 +46,8 @@
             "enabled": false,
             "tenant_id": "",
             "client_id": "",
-            "audience": ""
+            "audience": "",
+            "auto_provision": true
         }
     },
     "database": {
