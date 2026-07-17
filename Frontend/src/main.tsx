@@ -11,15 +11,25 @@ await initAppConfig()
 
 // If we're returning from a Microsoft sign-in redirect, exchange the ID token
 // for an app session before React mounts.
-try {
-  const idToken = await handleAzureRedirect()
-  if (idToken) {
-    await azureLogin(idToken)
+async function handleMicrosoftReturn() {
+  try {
+    const idToken = await handleAzureRedirect()
+    if (idToken) {
+      await azureLogin(idToken)
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  } catch (err) {
+    sessionStorage.setItem('msLoginError', err instanceof Error ? err.message : String(err))
+    // Clear the leftover ?code/#code so a failed attempt doesn't get reprocessed.
     window.history.replaceState({}, document.title, window.location.pathname)
   }
-} catch (err) {
-  sessionStorage.setItem('msLoginError', err instanceof Error ? err.message : String(err))
 }
+
+// Never let the Microsoft exchange block the UI indefinitely — always render.
+await Promise.race([
+  handleMicrosoftReturn(),
+  new Promise((resolve) => setTimeout(resolve, 8000)),
+])
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
