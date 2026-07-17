@@ -60,7 +60,7 @@ export default function LoginGate({ onLoggedIn, heading = 'Sign in', subtext = '
         </label>
 
         <div className="button-row">
-          <button className="primary-btn" onClick={() => void submit()} disabled={busy || !username || !password}>
+          <button className="primary-btn login-submit" onClick={() => void submit()} disabled={busy || !username || !password}>
             {busy ? 'Signing in...' : 'Sign in'}
           </button>
         </div>

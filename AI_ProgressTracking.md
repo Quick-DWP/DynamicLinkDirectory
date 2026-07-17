@@ -206,6 +206,12 @@
 - Note: app port changed locally to 9008 → Entra SPA redirect URI must be `http://localhost:9008` (origin follows the port).
 - Next action: configure Entra SPA redirect URI for the running origin; test live MS login (first sign-in should auto-create a viewer).
 
+### 2026-07-17 15:39 — Azure login UX fixes
+
+- Summary: (a) MSAL redirect URI must be registered as **SPA** (not Web) — that was the "couldn't sign you in" cause; code was fine. (b) Land on directory after MS sign-in via `handleRedirectPromise({ navigateToLoginRequestUrl: false })` (v5 moved the flag to the call) + replaceState('/'). (c) Hardened main.tsx so a failed MS exchange never blank-screens (guard + 8s timeout, clears stale ?code). (d) Directory now reacts to auth (`useAuth`) — logout re-gates it when require_login is on. (e) Added a neutral `/login` route (not the admin gate); header "Log in" → /login → lands on '/'. (f) Made the "Sign in" button full-width to match "Continue with Microsoft".
+- Files: `azure.ts`, `main.tsx`, `App.tsx`, `pages/DirectoryPage.tsx`, `components/LoginGate.tsx`, `index.css`.
+- Next action: optional `azure.admin_emails` auto-elevation so the first MS admin doesn't need a manual bump.
+
 ---
 
 ## Template Updates

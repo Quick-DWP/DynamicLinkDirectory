@@ -1708,6 +1708,16 @@ select:disabled {
 	margin: 0 auto;
 }
 
+/* Login form: full-width, centered action buttons */
+.login-card .button-row {
+	justify-content: center;
+}
+
+.login-submit {
+	width: 100%;
+	justify-content: center;
+}
+
 .ms-btn {
 	display: inline-flex;
 	align-items: center;

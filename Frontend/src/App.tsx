@@ -1,14 +1,23 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { getAppConfig } from './config';
 import { useAuth, logout } from './auth';
 import { fetchSiteSettings, resolveAccent, accentVars, paletteVars, DEFAULT_ACCENT, normalizeShell, normalizePalette, logoUrl, type ShellLayout, type ThemePalette } from './settings';
 import DirectoryPage from './pages/DirectoryPage';
 import AdminPage from './pages/AdminPage';
+import LoginGate from './components/LoginGate';
 import './index.css';
 
 const heroNavClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'app-nav-link active' : 'app-nav-link');
 const topNavClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'topbar-link active' : 'topbar-link');
+
+// Neutral sign-in page (not framed as admin). Lands on the directory afterwards.
+function LoginRoute() {
+  const { user, loaded } = useAuth();
+  const navigate = useNavigate();
+  if (loaded && user) return <Navigate to="/" replace />;
+  return <LoginGate heading="Sign in" subtext="Sign in to continue." onLoggedIn={() => navigate('/', { replace: true })} />;
+}
 
 export default function App() {
   const config = getAppConfig();
@@ -72,6 +81,7 @@ export default function App() {
   const routes = (
     <Routes>
       <Route path="/" element={<DirectoryPage />} />
+      <Route path="/login" element={<LoginRoute />} />
       <Route path="/admin" element={<AdminPage onSettingsSaved={loadSettings} />} />
     </Routes>
   );
@@ -94,7 +104,7 @@ export default function App() {
               <nav className="topbar-nav" aria-label="Primary">
                 <NavLink to="/" end className={topNavClass}>Directory</NavLink>
                 {user?.role === 'admin' ? <NavLink to="/admin" className={topNavClass}>Admin</NavLink> : null}
-                {!user ? <NavLink to="/admin" className={topNavClass}>Log in</NavLink> : null}
+                {!user ? <NavLink to="/login" className={topNavClass}>Log in</NavLink> : null}
                 {user ? <button type="button" className="topbar-link" onClick={onLogout}>Log out</button> : null}
               </nav>
             </div>
@@ -117,7 +127,7 @@ export default function App() {
             <nav className="app-nav" aria-label="Primary">
               <NavLink to="/" end className={heroNavClass}>Directory</NavLink>
               {user?.role === 'admin' ? <NavLink to="/admin" className={heroNavClass}>Admin</NavLink> : null}
-              {!user ? <NavLink to="/admin" className={heroNavClass}>Log in</NavLink> : null}
+              {!user ? <NavLink to="/login" className={heroNavClass}>Log in</NavLink> : null}
               {user ? <button type="button" className="app-nav-link" onClick={onLogout}>Log out</button> : null}
             </nav>
 
