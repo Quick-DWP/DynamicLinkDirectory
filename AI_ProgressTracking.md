@@ -227,6 +227,12 @@
 - Verified against a throwaway `PORT=9009` instance (same shared DB): 9-check API script — note saves/edits/clears, admin list returns it, directory payload has neither the `note` key nor the secret text. Added a committed Playwright regression test (`Devtools`) asserting the same + the editor field; all 6 green.
 - ACTION for the running app: restart the portal (`run.bat` / `pull-run.bat`) so the new backend loads — the `note` column already exists in the DB (patch ran), but the live `:9008` server is still on the old code until restarted.
 
+### 2026-07-17 — Fix: non-ASCII attachment names + modal position
+
+- Bug: attachments with non-Latin filenames (e.g. Thai PDF) never previewed/downloaded — the raw endpoint put the raw name in `Content-Disposition`, and Node aborts the response on non-ASCII header values (fetch "terminated"). Fix: send an ASCII-sanitized `filename="…"` plus RFC 5987 `filename*=UTF-8''<pct-encoded>` for the real name. Also dropped the redundant manual `Content-Length` (Fastify sets it from the buffer). Verified the 261 KB Thai PDF now returns 200 with all bytes.
+- Bug: the attachment modal opened from the admin editor appeared pinned to the bottom / off-screen. Cause: it rendered inside a `.panel` that has `backdrop-filter`, which becomes the containing block for `position: fixed`, so the overlay centered within the tall panel instead of the viewport. Fix: `AttachmentModal` now renders through `createPortal(…, document.body)`, so it always centers on the viewport (viewer + admin). Playwright asserts the overlay is viewport-pinned.
+- Files: `Backend/app/routes/api/attachment.route.js`, `Frontend/src/components/AttachmentModal.tsx`, `Devtools/tests/ux.spec.js`. 10/10 green.
+
 ### 2026-07-17 — Nullable role + domain-gated Microsoft provisioning + unauthorized screen
 
 - `role` is now nullable (model `allowNull: true`; patch drops NOT NULL + default 'admin'). null = "no access".

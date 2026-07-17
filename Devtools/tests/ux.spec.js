@@ -232,6 +232,12 @@ test.describe('Link attachments', () => {
     // Admin "View" opens the in-page preview modal (not a new tab).
     await row.locator('button', { hasText: 'View' }).click();
     await expect(page.locator('.att-modal')).toBeVisible();
+    // The modal is portaled to <body>, so it centers on the viewport even though
+    // it's triggered from inside a backdrop-filtered panel (not stuck at the bottom).
+    const ov = await page.locator('.modal-overlay').boundingBox();
+    const vp = page.viewportSize();
+    expect(ov.y).toBeLessThan(40);
+    expect(ov.height).toBeGreaterThan(vp.height * 0.8);
     await expect(page.locator('.att-preview-frame')).toBeVisible({ timeout: 10000 });
     await page.locator('.att-close').click();
     await expect(page.locator('.att-modal')).toHaveCount(0);

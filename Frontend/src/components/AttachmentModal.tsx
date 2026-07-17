@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { listAttachments, fetchAttachmentBlob, formatBytes, fileEmoji, type Attachment } from '../attachments';
 import AttachmentPreview from './AttachmentPreview';
 
@@ -47,7 +48,7 @@ export default function AttachmentModal({ linkId, title, onClose, initialUuid }:
 
   const current = files.find((f) => f.uuid === selected) || null;
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card att-modal" role="dialog" aria-modal="true" aria-label={`Attachments for ${title}`} onClick={(e) => e.stopPropagation()}>
         <div className="att-modal-head">
@@ -90,6 +91,7 @@ export default function AttachmentModal({ linkId, title, onClose, initialUuid }:
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

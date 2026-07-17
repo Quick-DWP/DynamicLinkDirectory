@@ -90,12 +90,16 @@ export default async function attachmentRoutes(fastify) {
     if (!row) return reply.code(404).send({ ok: false, message: 'attachment not found' })
 
     reply.header('Content-Type', row.mime_type)
-    reply.header('Content-Length', row.size)
     reply.header('Cache-Control', 'private, max-age=300')
     reply.header('X-Content-Type-Options', 'nosniff')
     // Neutralize any active content if the file is opened directly.
     reply.header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox")
-    reply.header('Content-Disposition', `inline; filename="${safeFilename(row.filename)}"`)
+    // HTTP header values must be ASCII/latin1. Non-Latin names (e.g. Thai) would
+    // make Node abort the response, so send an ASCII fallback in `filename` and the
+    // real name via RFC 5987 `filename*`.
+    const rawName = row.filename || 'file'
+    const asciiName = (rawName.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_').slice(0, 200)) || 'file'
+    reply.header('Content-Disposition', `inline; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(rawName)}`)
     return reply.send(row.data)
   })
 
