@@ -227,6 +227,14 @@
 - Verified against a throwaway `PORT=9009` instance (same shared DB): 9-check API script — note saves/edits/clears, admin list returns it, directory payload has neither the `note` key nor the secret text. Added a committed Playwright regression test (`Devtools`) asserting the same + the editor field; all 6 green.
 - ACTION for the running app: restart the portal (`run.bat` / `pull-run.bat`) so the new backend loads — the `note` column already exists in the DB (patch ran), but the live `:9008` server is still on the old code until restarted.
 
+### 2026-07-17 — Admin routing + save-keeps-selection + modal preview + UX pass
+
+- Admin tabs are now real routes (`/admin/:tab`; `/admin` redirects to `/admin/categories`). Refresh and deep links land on the same section. Driven by `useParams`/`useNavigate` in `AdminPage`; unknown slugs redirect to categories. SPA fallback already serves `index.html` for deep links.
+- Editors no longer clear on save: saving a link / category / user now re-selects the saved record (using the API's returned row) instead of resetting to a blank "New" form. Creating a record keeps you on it (and for links, reveals the attachments panel immediately).
+- Admin attachment "View" now opens the in-page preview modal (reused `AttachmentModal` with a new `initialUuid` prop) instead of a raw new tab.
+- Devtools: admin password no longer hardcoded — the suite reads `DLD_ADMIN_USER`/`DLD_ADMIN_PASS` (defaults to the template dev creds). Added tests for save-keeps-selection and admin-tab routing; extended the attachments test to cover the admin View modal. Login helper hardened (per-key delay + fill fallback + wait-for-enabled) against the autofocus race. 9/9 green (run with `DLD_ADMIN_PASS=… BASE_URL=… npx playwright test`).
+- Files: `App.tsx`, `pages/AdminPage.tsx`, `components/AttachmentModal.tsx`, `components/AttachmentManager.tsx`, `Devtools/tests/ux.spec.js`.
+
 ### 2026-07-17 — Per-link file attachments (+ viewer preview)
 
 - Summary: Each link can now hold many files (spec / guideline / manual…). Admins upload/rename/delete them in the link editor; viewers open an "Attachments" button on the directory to preview or download.

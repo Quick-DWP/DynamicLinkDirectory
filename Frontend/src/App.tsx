@@ -82,7 +82,8 @@ export default function App() {
     <Routes>
       <Route path="/" element={<DirectoryPage />} />
       <Route path="/login" element={<LoginRoute />} />
-      <Route path="/admin" element={<AdminPage onSettingsSaved={loadSettings} />} />
+      <Route path="/admin" element={<Navigate to="/admin/categories" replace />} />
+      <Route path="/admin/:tab" element={<AdminPage onSettingsSaved={loadSettings} />} />
     </Routes>
   );
 

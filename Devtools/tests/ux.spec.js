@@ -15,7 +15,12 @@ const { test, expect } = require('@playwright/test');
 const path = require('path');
 
 const SHOTS = path.join(__dirname, '..', 'screenshots');
-const ADMIN = { username: 'admin', password: 'admin123' };
+// Never hardcode the real admin password. Default to the template's dev password;
+// override with DLD_ADMIN_USER / DLD_ADMIN_PASS to run against a real deployment.
+const ADMIN = {
+  username: process.env.DLD_ADMIN_USER || 'admin',
+  password: process.env.DLD_ADMIN_PASS || 'admin123',
+};
 
 const shot = (page, name) =>
   page.screenshot({ path: path.join(SHOTS, `${name}.png`), fullPage: true });
@@ -25,18 +30,25 @@ const loginCard = (page) => page.locator('.login-card');
 // Raw (non-CSS-transformed) trimmed text of the first match.
 const rawText = async (locator) => ((await locator.textContent()) || '').trim();
 
+// Robustly type into a React-controlled, autofocused input: click, type with a
+// small per-key delay, then fall back to fill() if the value didn't stick.
+async function typeInto(input, value) {
+  await input.click();
+  await input.pressSequentially(value, { delay: 15 });
+  if ((await input.inputValue()) !== value) await input.fill(value);
+  await expect(input).toHaveValue(value);
+}
+
 // Sign in through the /login form as admin. Returns true on success.
 async function loginAsAdmin(page) {
   await page.goto('/login');
   const card = loginCard(page);
   await expect(card).toBeVisible();
-  const userInput = card.locator('input[autocomplete="username"]');
-  const pwInput = card.locator('input[type="password"]');
-  await userInput.click();
-  await userInput.pressSequentially(ADMIN.username);
-  await pwInput.click();
-  await pwInput.pressSequentially(ADMIN.password);
-  await card.locator('button.login-submit').click();
+  await typeInto(card.locator('input[autocomplete="username"]'), ADMIN.username);
+  await typeInto(card.locator('input[type="password"]'), ADMIN.password);
+  const submit = card.locator('button.login-submit');
+  await expect(submit).toBeEnabled({ timeout: 5000 });
+  await submit.click();
   await page.waitForURL((url) => new URL(url).pathname === '/', { timeout: 8000 }).catch(() => {});
   return new URL(page.url()).pathname === '/';
 }
@@ -135,6 +147,50 @@ test.describe('Admin user form defaults to least privilege', () => {
   });
 });
 
+test.describe('Editor keeps its selection after save', () => {
+  test('saving a link stays on that link (form is not cleared)', async ({ page }) => {
+    if (!(await loginAsAdmin(page))) test.skip(true, 'Login did not succeed.');
+    await page.goto('/admin/links');
+    await page.locator('.item-list .item-card').first().click();
+    await expect(page.locator('.workspace-grid h3', { hasText: 'Edit link' })).toBeVisible();
+    const titleInput = page.locator('.field input').first();
+    const title = await titleInput.inputValue();
+    expect(title.length).toBeGreaterThan(0);
+
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.locator('.message.success', { hasText: 'Link updated' })).toBeVisible();
+
+    // Still editing the same link — not reset to a blank "New link" form.
+    await expect(page.locator('.workspace-grid h3', { hasText: 'Edit link' })).toBeVisible();
+    expect(await titleInput.inputValue()).toBe(title);
+    await expect(page.locator('.item-card.active')).toBeVisible();
+  });
+});
+
+test.describe('Admin tabs are real routes', () => {
+  test('deep-link, tab click, and refresh all keep the same section', async ({ page }) => {
+    if (!(await loginAsAdmin(page))) test.skip(true, 'Login did not succeed.');
+
+    // Deep link straight to a tab.
+    await page.goto('/admin/users');
+    await expect(page.locator('button.admin-tab.on', { hasText: 'Users' })).toBeVisible();
+    await expect(page.locator('select', { has: page.locator('option', { hasText: 'Viewer (can only view)' }) })).toBeVisible();
+
+    // Clicking a tab updates the URL.
+    await page.locator('button.admin-tab', { hasText: 'Site settings' }).click();
+    await expect(page).toHaveURL(/\/admin\/settings$/);
+
+    // Refresh keeps us on that tab (the whole point).
+    await page.reload();
+    await expect(page.locator('button.admin-tab.on', { hasText: 'Site settings' })).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe('/admin/settings');
+
+    // Bare /admin redirects to a real tab.
+    await page.goto('/admin');
+    await expect(page).toHaveURL(/\/admin\/categories$/);
+  });
+});
+
 test.describe('Link attachments', () => {
   test('admin attaches a file; viewer previews it in a modal', async ({ page }) => {
     if (!(await loginAsAdmin(page))) test.skip(true, 'Login did not succeed.');
@@ -151,16 +207,34 @@ test.describe('Link attachments', () => {
     });
     if (!info.ok) test.skip(true, 'Attachments API not available (restart the backend).');
 
+    // Remove any leftover test file from a prior run so the counts are deterministic.
+    const cleanup = () => page.evaluate(async (linkId) => {
+      const token = localStorage.getItem('dld_token') || '';
+      const h = { Authorization: `Bearer ${token}` };
+      const aj = await (await fetch(`/api/attachments/link/${linkId}`, { headers: h })).json();
+      for (const a of (aj.data || [])) {
+        if (a.filename === 'ux-attach-test.pdf') await fetch(`/api/attachments/${a.uuid}`, { method: 'DELETE', headers: h });
+      }
+    }, info.uuid);
+    await cleanup();
+
     // Upload through the admin link editor.
-    await page.goto('/admin');
-    await page.locator('button.admin-tab', { hasText: 'Links' }).click();
+    await page.goto('/admin/links');
     await page.locator('.item-list .item-card').first().click();
     const manager = page.locator('.att-manager');
     await expect(manager).toBeVisible();
     const pdf = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<<>>\n%%EOF', 'latin1');
     await manager.locator('input[type="file"]').setInputFiles({ name: 'ux-attach-test.pdf', mimeType: 'application/pdf', buffer: pdf });
-    await expect(page.locator('.att-admin-row', { hasText: 'ux-attach-test.pdf' })).toBeVisible({ timeout: 10000 });
+    const row = page.locator('.att-admin-row', { hasText: 'ux-attach-test.pdf' }).first();
+    await expect(row).toBeVisible({ timeout: 10000 });
     await shot(page, '09-admin-attachment-manager');
+
+    // Admin "View" opens the in-page preview modal (not a new tab).
+    await row.locator('button', { hasText: 'View' }).click();
+    await expect(page.locator('.att-modal')).toBeVisible();
+    await expect(page.locator('.att-preview-frame')).toBeVisible({ timeout: 10000 });
+    await page.locator('.att-close').click();
+    await expect(page.locator('.att-modal')).toHaveCount(0);
 
     // Viewer side: directory shows the button and previews the file.
     await page.goto('/');
@@ -171,19 +245,13 @@ test.describe('Link attachments', () => {
     await expect(btn).toBeVisible();
     await btn.click();
     await expect(page.locator('.att-modal')).toBeVisible();
-    await expect(page.locator('.att-item', { hasText: 'ux-attach-test.pdf' })).toBeVisible();
+    // Select our test PDF explicitly (the link may also have other files).
+    await page.locator('.att-item', { hasText: 'ux-attach-test.pdf' }).click();
     await expect(page.locator('.att-preview-frame')).toBeVisible({ timeout: 10000 });
     await shot(page, '10-attachment-modal');
 
     // Cleanup: remove the uploaded test file.
-    await page.evaluate(async (linkId) => {
-      const token = localStorage.getItem('dld_token') || '';
-      const h = { Authorization: `Bearer ${token}` };
-      const aj = await (await fetch(`/api/attachments/link/${linkId}`, { headers: h })).json();
-      for (const a of (aj.data || [])) {
-        if (a.filename === 'ux-attach-test.pdf') await fetch(`/api/attachments/${a.uuid}`, { method: 'DELETE', headers: h });
-      }
-    }, info.uuid);
+    await cleanup();
   });
 });
 

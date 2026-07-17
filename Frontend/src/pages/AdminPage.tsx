@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { authedFetch, useAuth, logout, changePassword, type AuthUser } from '../auth';
 import LoginGate from '../components/LoginGate';
 import ConfirmModal from '../components/ConfirmModal';
@@ -95,7 +96,17 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
 
   // Feedback is scoped to a section so it renders next to the form that produced it.
   const [feedback, setFeedback] = useState<{ scope: string; type: 'error' | 'success'; text: string } | null>(null);
-  const [tab, setTab] = useState<AdminTab>('categories');
+
+  // The active tab is a real route (/admin/:tab) so refresh and deep links land
+  // on the same section the user was in.
+  const { tab: tabParam } = useParams();
+  const navigate = useNavigate();
+  const tab: AdminTab = (ADMIN_TABS.some((t) => t.id === tabParam) ? tabParam : 'categories') as AdminTab;
+  useEffect(() => {
+    if (tabParam && !ADMIN_TABS.some((t) => t.id === tabParam)) {
+      navigate('/admin/categories', { replace: true });
+    }
+  }, [tabParam, navigate]);
   const [confirmState, setConfirmState] = useState<{ title: string; body: ReactNode; onConfirm: () => void } | null>(null);
   const notify = (scope: string, type: 'error' | 'success', text: string) => setFeedback({ scope, type, text });
   const renderFeedback = (scope: string) =>
@@ -228,8 +239,9 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
   };
 
   const saveUser = () => guard('users', async () => {
+    let saved;
     if (userSelected) {
-      await updateUser(userSelected, {
+      saved = await updateUser(userSelected, {
         email: userForm.email.trim(),
         display_name: userForm.display_name,
         role: userForm.role,
@@ -245,11 +257,12 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
       if (userForm.password && userForm.password.length < 6) {
         notify('users', 'error', 'Password must be at least 6 characters.'); return;
       }
-      await createUser({ ...userForm, email: userForm.email.trim() });
+      saved = await createUser({ ...userForm, email: userForm.email.trim() });
       notify('users', 'success', 'User created.');
     }
     await loadAll();
-    selectUser(null);
+    // Keep the editor on the saved account rather than resetting to a blank form.
+    selectUser(saved?.uuid ? saved : null);
   });
 
   const removeUser = (uuid: string) => guard('users', async () => {
@@ -280,15 +293,13 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
 
   const saveCategory = () => guard('category', async () => {
     if (!catForm.name.trim()) { notify('category', 'error', 'Category name is required.'); return; }
-    if (catSelected) {
-      await authedFetch(`/api/categories/${catSelected}`, { method: 'PATCH', body: JSON.stringify(catForm) });
-      notify('category', 'success', 'Category updated.');
-    } else {
-      await authedFetch('/api/categories', { method: 'POST', body: JSON.stringify(catForm) });
-      notify('category', 'success', 'Category created.');
-    }
+    const saved = catSelected
+      ? await authedFetch(`/api/categories/${catSelected}`, { method: 'PATCH', body: JSON.stringify(catForm) })
+      : await authedFetch('/api/categories', { method: 'POST', body: JSON.stringify(catForm) });
+    notify('category', 'success', catSelected ? 'Category updated.' : 'Category created.');
     await loadAll();
-    selectCategory(null);
+    // Keep the editor on the saved category (don't reset to a blank form).
+    selectCategory(saved?.uuid ? saved : null);
   });
 
   const deleteCategory = (uuid: string) => guard('category', async () => {
@@ -344,15 +355,14 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
     if (!linkForm.url.trim()) { notify('link', 'error', 'Link URL is required.'); return; }
     if (!isValidHttpUrl(linkForm.url)) { notify('link', 'error', 'Enter a valid URL (e.g. https://example.com).'); return; }
     if (!linkForm.category_id) { notify('link', 'error', 'Select a category for this link.'); return; }
-    if (linkSelected) {
-      await authedFetch(`/api/links/${linkSelected}`, { method: 'PATCH', body: JSON.stringify(linkForm) });
-      notify('link', 'success', 'Link updated.');
-    } else {
-      await authedFetch('/api/links', { method: 'POST', body: JSON.stringify(linkForm) });
-      notify('link', 'success', 'Link created.');
-    }
+    const saved = linkSelected
+      ? await authedFetch(`/api/links/${linkSelected}`, { method: 'PATCH', body: JSON.stringify(linkForm) })
+      : await authedFetch('/api/links', { method: 'POST', body: JSON.stringify(linkForm) });
+    notify('link', 'success', linkSelected ? 'Link updated.' : 'Link created.');
     await loadAll();
-    selectLink(null);
+    // Keep the editor on the saved link — so you can keep editing or add
+    // attachments to a link you just created, instead of losing your place.
+    selectLink(saved?.uuid ? saved : null);
   });
 
   const deleteLink = (uuid: string) => guard('link', async () => {
@@ -438,7 +448,7 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
 
       <nav className="admin-tabs" aria-label="Admin sections">
         {ADMIN_TABS.map((t) => (
-          <button key={t.id} type="button" className={`admin-tab${tab === t.id ? ' on' : ''}`} onClick={() => setTab(t.id)}>
+          <button key={t.id} type="button" className={`admin-tab${tab === t.id ? ' on' : ''}`} onClick={() => navigate(`/admin/${t.id}`)}>
             {t.label}
           </button>
         ))}
@@ -691,7 +701,7 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
 
           <div className="att-section">
             {linkSelected ? (
-              <AttachmentManager linkId={linkSelected} />
+              <AttachmentManager linkId={linkSelected} title={linkForm.title} />
             ) : (
               <p className="dld-hint">💾 Save the link first — then you can attach files (spec, guideline, manual…).</p>
             )}

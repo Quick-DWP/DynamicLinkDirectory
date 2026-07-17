@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { listAttachments, fetchAttachmentBlob, formatBytes, fileEmoji, type Attachment } from '../attachments';
 import AttachmentPreview from './AttachmentPreview';
 
-type Props = { linkId: string; title: string; onClose: () => void };
+type Props = { linkId: string; title: string; onClose: () => void; initialUuid?: string };
 
-// Viewer-facing modal: lists a link's files and previews them in-page.
-export default function AttachmentModal({ linkId, title, onClose }: Props) {
+// Modal: lists a link's files and previews them in-page. Used by both the viewer
+// directory and the admin editor (which opens it focused on a specific file).
+export default function AttachmentModal({ linkId, title, onClose, initialUuid }: Props) {
   const [files, setFiles] = useState<Attachment[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,12 +25,13 @@ export default function AttachmentModal({ linkId, title, onClose }: Props) {
       .then((rows) => {
         if (cancelled) return;
         setFiles(rows);
-        setSelected(rows[0]?.uuid ?? null);
+        const start = initialUuid && rows.some((r) => r.uuid === initialUuid) ? initialUuid : rows[0]?.uuid ?? null;
+        setSelected(start);
       })
       .catch(() => { if (!cancelled) setError('Could not load attachments.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [linkId]);
+  }, [linkId, initialUuid]);
 
   const download = async (f: Attachment) => {
     const blob = await fetchAttachmentBlob(f.uuid);

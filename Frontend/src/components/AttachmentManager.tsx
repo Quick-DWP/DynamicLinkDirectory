@@ -1,19 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  listAttachments, uploadAttachment, renameAttachment, deleteAttachment, fetchAttachmentBlob,
+  listAttachments, uploadAttachment, renameAttachment, deleteAttachment,
   formatBytes, fileEmoji, type Attachment,
 } from '../attachments';
+import AttachmentModal from './AttachmentModal';
 
 const ACCEPT = '.pdf,image/*,.txt,.csv,.md,.json,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,application/pdf';
 
 // Admin control (inside the link editor) to attach/manage files for one link.
 // Attachments save immediately — independent of the link's own "Save" button.
-export default function AttachmentManager({ linkId }: { linkId: string }) {
+export default function AttachmentManager({ linkId, title }: { linkId: string; title: string }) {
   const [files, setFiles] = useState<Attachment[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [editing, setEditing] = useState<{ uuid: string; name: string } | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -21,7 +23,7 @@ export default function AttachmentManager({ linkId }: { linkId: string }) {
   };
 
   useEffect(() => {
-    setMsg(null); setEditing(null); setConfirmDel(null);
+    setMsg(null); setEditing(null); setConfirmDel(null); setViewing(null);
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkId]);
@@ -57,15 +59,6 @@ export default function AttachmentManager({ linkId }: { linkId: string }) {
     try { await deleteAttachment(uuid); setConfirmDel(null); await load(); setMsg({ type: 'success', text: 'File removed.' }); }
     catch (e) { setMsg({ type: 'error', text: e instanceof Error ? e.message : 'Delete failed.' }); }
     finally { setBusy(false); }
-  };
-
-  const view = async (f: Attachment) => {
-    try {
-      const blob = await fetchAttachmentBlob(f.uuid);
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener');
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } catch { setMsg({ type: 'error', text: 'Could not open file.' }); }
   };
 
   return (
@@ -113,7 +106,7 @@ export default function AttachmentManager({ linkId }: { linkId: string }) {
                   </>
                 ) : (
                   <>
-                    <button type="button" className="mini-btn" onClick={() => void view(f)}>View</button>
+                    <button type="button" className="mini-btn" onClick={() => setViewing(f.uuid)}>View</button>
                     <button type="button" className="mini-btn" onClick={() => setEditing({ uuid: f.uuid, name: f.filename })}>Rename</button>
                     <button type="button" className="mini-btn danger" onClick={() => setConfirmDel(f.uuid)}>Delete</button>
                   </>
@@ -125,6 +118,10 @@ export default function AttachmentManager({ linkId }: { linkId: string }) {
       )}
 
       {msg ? <p className={`message ${msg.type}`}>{msg.text}</p> : null}
+
+      {viewing ? (
+        <AttachmentModal linkId={linkId} title={title || 'Attachment'} initialUuid={viewing} onClose={() => setViewing(null)} />
+      ) : null}
     </div>
   );
 }
