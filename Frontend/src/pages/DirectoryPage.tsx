@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiUrl } from '../config';
-import { getToken } from '../auth';
+import { getToken, useAuth } from '../auth';
 import { fetchSiteSettings, normalizeTheme, type LayoutTheme } from '../settings';
 import type { DirectoryGroup, Link } from '../types';
 import LinkIcon from '../components/LinkIcon';
@@ -18,6 +18,7 @@ const GotoIcon = () => (
 );
 
 export default function DirectoryPage() {
+  const { user } = useAuth();
   const [groups, setGroups] = useState<DirectoryGroup[]>([]);
   const [theme, setTheme] = useState<LayoutTheme>('cards');
   const [autoFavicon, setAutoFavicon] = useState(true);
@@ -71,9 +72,12 @@ export default function DirectoryPage() {
     }
   };
 
+  // Reload (and re-gate) whenever the signed-in user changes — e.g. logging out
+  // must hide a login-gated directory, logging in must reveal it.
   useEffect(() => {
     void loadDirectory();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uuid]);
 
   const toggle = (key: string) => setExpanded((cur) => ({ ...cur, [key]: !cur[key] }));
 
