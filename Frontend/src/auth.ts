@@ -4,6 +4,7 @@ import { apiUrl } from './config';
 export type AuthUser = {
   uuid: string;
   username: string;
+  email?: string | null;
   display_name: string;
   role: string;
   last_login_at: string | null;
@@ -102,6 +103,22 @@ export async function login(username: string, password: string): Promise<AuthUse
   const result = await response.json();
   if (!response.ok || !result?.ok) {
     throw new Error(result?.message || 'Login failed');
+  }
+  setToken(result.data.token);
+  setCurrentUser(result.data.user as AuthUser);
+  return result.data.user as AuthUser;
+}
+
+// Exchange a verified Microsoft ID token for an app session.
+export async function azureLogin(idToken: string): Promise<AuthUser> {
+  const response = await fetch(apiUrl('/api/auth/azure-login'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken }),
+  });
+  const result = await response.json();
+  if (!response.ok || !result?.ok) {
+    throw new Error(result?.message || 'Microsoft sign-in failed');
   }
   setToken(result.data.token);
   setCurrentUser(result.data.user as AuthUser);

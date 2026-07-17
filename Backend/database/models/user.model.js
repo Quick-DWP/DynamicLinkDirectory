@@ -22,6 +22,11 @@ export default (sequelize, DataTypes, schemas, choices, hooks) => {
                 unique: true,
                 comment: "Login name (unique)",
             },
+            email: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: "Email used to match Microsoft (Azure AD) sign-in; case-insensitive",
+            },
             display_name: {
                 type: DataTypes.STRING,
                 allowNull: false,
@@ -30,13 +35,13 @@ export default (sequelize, DataTypes, schemas, choices, hooks) => {
             },
             password_hash: {
                 type: DataTypes.STRING,
-                allowNull: false,
-                comment: "scrypt hash of the password (hex)",
+                allowNull: true,
+                comment: "scrypt hash of the password (hex); null for Microsoft-only accounts",
             },
             password_salt: {
                 type: DataTypes.STRING,
-                allowNull: false,
-                comment: "Per-password salt (hex)",
+                allowNull: true,
+                comment: "Per-password salt (hex); null for Microsoft-only accounts",
             },
             role: {
                 type: DataTypes.STRING,

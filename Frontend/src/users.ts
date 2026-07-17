@@ -3,6 +3,7 @@ import { authedFetch } from './auth';
 export type AdminUser = {
   uuid: string;
   username: string;
+  email: string | null;
   display_name: string;
   role: string;
   is_active: boolean;
@@ -12,6 +13,7 @@ export type AdminUser = {
 
 export type UserInput = {
   username?: string;
+  email?: string;
   display_name?: string;
   password?: string;
   role?: string;

@@ -41,6 +41,12 @@
             "username": "admin",
             "password": "change-me",
             "display_name": "Administrator"
+        },
+        "azure": {
+            "enabled": false,
+            "tenant_id": "",
+            "client_id": "",
+            "audience": ""
         }
     },
     "database": {

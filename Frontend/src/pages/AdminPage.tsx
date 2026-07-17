@@ -21,7 +21,7 @@ const ADMIN_TABS = [
 ] as const;
 type AdminTab = (typeof ADMIN_TABS)[number]['id'];
 
-const EMPTY_USER = { username: '', display_name: '', role: 'admin', password: '', is_active: true };
+const EMPTY_USER = { username: '', email: '', display_name: '', role: 'admin', password: '', is_active: true };
 const EMPTY_CATEGORY = { name: '', description: '', icon: '', color: '', sort_order: 0, default_expanded: false, is_active: true };
 const EMPTY_LINK = { title: '', url: '', description: '', icon: '', category_id: '', sort_order: 0, open_in_new_tab: true, is_active: true };
 
@@ -223,12 +223,13 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
   const selectUser = (u: AdminUser | null) => {
     if (!u) { setUserSelected(null); setUserForm(EMPTY_USER); return; }
     setUserSelected(u.uuid);
-    setUserForm({ username: u.username, display_name: u.display_name, role: u.role, password: '', is_active: u.is_active });
+    setUserForm({ username: u.username, email: u.email || '', display_name: u.display_name, role: u.role, password: '', is_active: u.is_active });
   };
 
   const saveUser = () => guard('users', async () => {
     if (userSelected) {
       await updateUser(userSelected, {
+        email: userForm.email.trim(),
         display_name: userForm.display_name,
         role: userForm.role,
         is_active: userForm.is_active,
@@ -237,8 +238,13 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
       notify('users', 'success', 'User updated.');
     } else {
       if (!userForm.username.trim()) { notify('users', 'error', 'Username is required.'); return; }
-      if (userForm.password.length < 6) { notify('users', 'error', 'Password must be at least 6 characters.'); return; }
-      await createUser(userForm);
+      if (!userForm.password && !userForm.email.trim()) {
+        notify('users', 'error', 'Set a password or an email (for Microsoft sign-in).'); return;
+      }
+      if (userForm.password && userForm.password.length < 6) {
+        notify('users', 'error', 'Password must be at least 6 characters.'); return;
+      }
+      await createUser({ ...userForm, email: userForm.email.trim() });
       notify('users', 'success', 'User created.');
     }
     await loadAll();
@@ -741,6 +747,9 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
           <label className="field"><span>Username</span>
             <input value={userForm.username} onChange={(e) => setUserForm((f) => ({ ...f, username: e.target.value }))} disabled={!!userSelected} autoComplete="off" placeholder="login name" />
           </label>
+          <label className="field"><span>Email (for Microsoft sign-in)</span>
+            <input type="email" value={userForm.email} onChange={(e) => setUserForm((f) => ({ ...f, email: e.target.value }))} autoComplete="off" placeholder="name@quick-transformation.com" />
+          </label>
           <label className="field"><span>Display name</span>
             <input value={userForm.display_name} onChange={(e) => setUserForm((f) => ({ ...f, display_name: e.target.value }))} />
           </label>
@@ -755,10 +764,10 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
               <Toggle checked={userForm.is_active} onChange={(v) => setUserForm((f) => ({ ...f, is_active: v }))} onLabel="Active" offLabel="Disabled" />
             </div>
           </div>
-          <label className="field"><span>{userSelected ? 'New password (blank = keep current)' : 'Password'}</span>
-            <input type="password" value={userForm.password} onChange={(e) => setUserForm((f) => ({ ...f, password: e.target.value }))} autoComplete="new-password" placeholder={userSelected ? '••••••' : 'at least 6 characters'} />
+          <label className="field"><span>{userSelected ? 'New password (blank = keep current)' : 'Password (optional if email set)'}</span>
+            <input type="password" value={userForm.password} onChange={(e) => setUserForm((f) => ({ ...f, password: e.target.value }))} autoComplete="new-password" placeholder={userSelected ? '••••••' : 'leave blank for Microsoft-only login'} />
           </label>
-          <p className="dld-hint">Admins can manage everything; viewers can only sign in to see the directory (used when “Require login” is on). The last active admin can’t be removed or demoted.</p>
+          <p className="dld-hint">Set an <b>email</b> to allow Microsoft sign-in (matched case-insensitively). A password enables username/password login. Admins manage everything; viewers can only view. The last active admin can’t be removed or demoted.</p>
 
           <div className="button-row">
             <button className="primary-btn" onClick={() => void saveUser()} disabled={busy}>{userSelected ? 'Save changes' : 'Create user'}</button>

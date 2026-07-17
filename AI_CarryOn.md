@@ -1,14 +1,18 @@
 # AI_CarryOn.md
 
 > Purpose: short handoff for the project being built from this template.
-> Last updated: 2026-06-30
+> Last updated: 2026-07-17
 
 ## Current Goal
 
-**Project: Dynamic Link Directory (DLD)** — a web portal where an admin
-curates a list of links organized into categories, and users browse/click them.
+**Project: Quick Transformation — Sales Demo App Portal** (built on the Dynamic Link
+Directory / DLD engine): a web portal where an admin curates links organized into
+categories, and users browse/open them. Deployed for Quick Transformation's sales demos.
 
-v1 + first refinement pass (auth, DnD, search, click tracking) are built and verified end-to-end.
+Phase 1 shipped and tagged `v1.0.0`. **Phase 2 is in progress on the Quick-DWP fork**
+against the `sales_demo_portal` DB schema. The codebase is still generically the DLD engine
+(models/routes named links/categories); the "Sales Demo App Portal" identity comes from the
+site settings (title/subtitle/logo), not hard-coded.
 
 ## Current State
 
@@ -31,6 +35,13 @@ v1 + first refinement pass (auth, DnD, search, click tracking) are built and ver
   **User management** (admin): `/api/users` CRUD (`user.route.js`); last active admin can't be
   deleted/deactivated/demoted; can't delete self. Admin UI has Account (change password) + Users panels.
   **Session cleanup**: cron (`app/plugins/cron.js`) purges expired sessions daily 03:00 + once on boot.
+  **Microsoft (Azure AD) sign-in**: `GET /api/auth/azure-config` (public: enabled + tenant/client id),
+  `POST /api/auth/azure-login` (verifies MS ID token via jose/JWKS in `lib/azure.js`, then authorizes by
+  matching `users.email` case-insensitively → issues a normal session; 403 if not provisioned). Azure only
+  authenticates; the users table authorizes. Users now have an `email` and password is optional (MS-only accounts).
+  Config in `config.auth.azure` (tenant_id/client_id only — NO client secret; the SPA/ID-token flow doesn't use it).
+  Frontend: MSAL redirect (`src/azure.ts`), handled in main.tsx; "Continue with Microsoft" on the login gate.
+  Entra: register the app **origin** as a **SPA** redirect URI (e.g. http://localhost:3000 / the deployed origin).
   **Roles + view gate**: auth plugin exposes `authenticate` (any active user), `requireAdmin` (role==='admin'
   → else 403; guards all management APIs), and `gateView` (gates `GET /api/directory` only when the
   `require_login` setting is on). `require_login` (admin toggle, default off) makes the public Directory require

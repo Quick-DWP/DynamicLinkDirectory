@@ -1708,6 +1708,19 @@ select:disabled {
 	margin: 0 auto;
 }
 
+.ms-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	width: 100%;
+	margin-top: 12px;
+}
+
+.ms-btn svg {
+	flex: 0 0 auto;
+}
+
 .cat-accent {
 	border-left: 4px solid var(--accent);
 }

@@ -189,6 +189,15 @@
 - Files: `AI_CarryOn.md`, `AI_ProgressTracking.md`.
 - Pre-prod hardening still queued (not done): env-var secrets, global error handler, npm ci/start.bat + engines, CORS tightening, HTTPS/process manager (ops).
 
+### 2026-07-17 15:16 — Phase 2: Microsoft (Azure AD) sign-in
+
+- Summary: Added MSAL redirect login. Backend: `lib/azure.js` verifies MS ID token (jose + JWKS, issuer/audience checks); `GET /api/auth/azure-config` (public SPA ids), `POST /api/auth/azure-login` (verify → match `users.email` case-insensitively → issue session; 403 if unprovisioned, 401 on bad token). Users gained `email` (nullable) and password is now optional (MS-only accounts) — via model + idempotent patches (ADD email, DROP NOT NULL on password_hash/salt). Users API: email in create/patch with case-insensitive uniqueness; create requires password OR email. Frontend: `src/azure.ts` (MSAL PublicClientApplication, loginRedirect, handleRedirectPromise), `azureLogin` in auth.ts, main.tsx handles the redirect return, LoginGate shows "Continue with Microsoft", admin user editor has an Email field.
+- Config: `config.auth.azure { enabled, tenant_id, client_id, audience }` — tenant/client only, **no client secret** (the SPA/ID-token flow doesn't need it; the shared secret should be rotated/deleted in Entra).
+- Entra setup: register the app **origin** as a **SPA** redirect URI (MSAL uses redirectUri = window.location.origin); leave implicit-grant checkboxes off.
+- Deps: backend `jose`, frontend `@azure/msal-browser` (bundle grew ~230 KB).
+- Verified: boot + 6 patches clean; azure-config returns ids; azure-login no-token 400 / bad-token 401; password login OK; MS-only user (email, no password) created; neither-provided 400; duplicate email (diff case) 409. Live MS redirect + the 403-not-authorized path need a real browser sign-in with the Entra SPA redirect URI configured.
+- Next action: user provisions their MS email as an admin user, configures the Entra SPA redirect URI, and tests the live "Continue with Microsoft" flow.
+
 ---
 
 ## Template Updates

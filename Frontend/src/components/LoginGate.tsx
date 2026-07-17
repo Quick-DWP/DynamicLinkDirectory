@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { login, type AuthUser } from '../auth';
+import { fetchAzureConfig, startAzureLogin } from '../azure';
 
 type Props = {
   onLoggedIn?: (user: AuthUser) => void;
@@ -12,6 +13,16 @@ export default function LoginGate({ onLoggedIn, heading = 'Sign in', subtext = '
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [azureEnabled, setAzureEnabled] = useState(false);
+
+  useEffect(() => {
+    void fetchAzureConfig().then((c) => setAzureEnabled(!!c.enabled));
+    const stashed = sessionStorage.getItem('msLoginError');
+    if (stashed) {
+      setError(stashed);
+      sessionStorage.removeItem('msLoginError');
+    }
+  }, []);
 
   const submit = async () => {
     setBusy(true);
@@ -53,6 +64,21 @@ export default function LoginGate({ onLoggedIn, heading = 'Sign in', subtext = '
             {busy ? 'Signing in...' : 'Sign in'}
           </button>
         </div>
+
+        {azureEnabled ? (
+          <>
+            <div className="login-divider">or</div>
+            <button type="button" className="secondary-btn ms-btn" onClick={() => void startAzureLogin()}>
+              <svg viewBox="0 0 23 23" width="16" height="16" aria-hidden="true">
+                <rect x="1" y="1" width="10" height="10" fill="#f25022" />
+                <rect x="12" y="1" width="10" height="10" fill="#7fba00" />
+                <rect x="1" y="12" width="10" height="10" fill="#00a4ef" />
+                <rect x="12" y="12" width="10" height="10" fill="#ffb900" />
+              </svg>
+              Continue with Microsoft
+            </button>
+          </>
+        ) : null}
       </article>
     </section>
   );

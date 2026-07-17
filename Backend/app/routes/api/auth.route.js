@@ -1,4 +1,6 @@
+import { fn, col, where as sqlWhere } from 'sequelize'
 import { verifyPassword, generateToken, hashPassword } from '../../../lib/auth.js'
+import { verifyAzureIdToken } from '../../../lib/azure.js'
 
 function ensureModels(fastify, reply) {
   if (!fastify.db?.Users || !fastify.db?.Sessions) {
@@ -12,6 +14,7 @@ function publicUser(user) {
   return {
     uuid: user.uuid,
     username: user.username,
+    email: user.email,
     display_name: user.display_name,
     role: user.role,
     last_login_at: user.last_login_at,
@@ -85,6 +88,69 @@ export default async function authRoutes(fastify) {
       ok: true,
       data: { token, expires_at: expiresAt, user: publicUser(user) },
     })
+  })
+
+  // Public: whether Microsoft sign-in is available + the SPA client/tenant ids.
+  fastify.get('/azure-config', async (request, reply) => {
+    const az = fastify.config?.auth?.azure || {}
+    const enabled = az.enabled === true && !!az.tenant_id && !!az.client_id
+    return reply.send({
+      ok: true,
+      data: enabled
+        ? { enabled: true, tenant_id: az.tenant_id, client_id: az.client_id }
+        : { enabled: false },
+    })
+  })
+
+  // Microsoft (Azure AD) sign-in: verify the ID token, then authorize against the
+  // local users table (email match). Azure authenticates; the users table authorizes.
+  fastify.post('/azure-login', async (request, reply) => {
+    const db = ensureModels(fastify, reply)
+    if (!db) return
+
+    const az = fastify.config?.auth?.azure || {}
+    if (!(az.enabled === true && az.tenant_id && az.client_id)) {
+      return reply.code(400).send({ ok: false, message: 'Microsoft sign-in is not enabled.' })
+    }
+
+    const idToken = String(request.body?.idToken || '')
+    if (!idToken) {
+      return reply.code(400).send({ ok: false, message: 'idToken is required' })
+    }
+
+    let email
+    try {
+      const verified = await verifyAzureIdToken(idToken, {
+        tenantId: az.tenant_id,
+        clientId: az.client_id,
+        audience: az.audience || '',
+      })
+      email = verified.email
+    } catch {
+      return reply.code(401).send({ ok: false, message: 'Microsoft sign-in could not be verified.' })
+    }
+    if (!email) {
+      return reply.code(401).send({ ok: false, message: 'Microsoft account has no email.' })
+    }
+
+    // Case-insensitive email match against provisioned users.
+    const user = await db.Users.findOne({
+      where: sqlWhere(fn('lower', col('email')), email.toLowerCase()),
+    })
+    if (!user) {
+      return reply.code(403).send({ ok: false, message: 'This Microsoft account is not authorized in this system.' })
+    }
+    if (!user.is_active) {
+      return reply.code(403).send({ ok: false, message: 'This account is inactive.' })
+    }
+
+    const token = generateToken()
+    const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000)
+    await db.Sessions.create({ user_id: user.uuid, token, expires_at: expiresAt })
+    user.last_login_at = new Date()
+    await user.save()
+
+    return reply.send({ ok: true, data: { token, expires_at: expiresAt, user: publicUser(user) } })
   })
 
   fastify.post('/logout', { preHandler: fastify.authenticate }, async (request, reply) => {
