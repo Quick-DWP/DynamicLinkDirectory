@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { getAppConfig } from './config';
-import { useAuth, logout } from './auth';
+import { useAuth, logout, isAuthorized } from './auth';
 import { fetchSiteSettings, resolveAccent, accentVars, paletteVars, DEFAULT_ACCENT, normalizeShell, normalizePalette, logoUrl, type ShellLayout, type ThemePalette } from './settings';
 import DirectoryPage from './pages/DirectoryPage';
 import AdminPage from './pages/AdminPage';
 import LoginGate from './components/LoginGate';
+import Unauthorized from './components/Unauthorized';
 import './index.css';
 
 const heroNavClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'app-nav-link active' : 'app-nav-link');
@@ -30,6 +31,8 @@ export default function App() {
   const [hasLogo, setHasLogo] = useState(false);
   const [logoTick, setLogoTick] = useState(0); // cache-bust the logo after changes
   const { user } = useAuth();
+  // A signed-in account with no role sees only the "not authorized" screen.
+  const unauthorized = !!user && !isAuthorized(user);
   const onLogout = () => { void logout(); };
 
   const loadSettings = async () => {
@@ -87,6 +90,8 @@ export default function App() {
     </Routes>
   );
 
+  const content = unauthorized ? <Unauthorized /> : routes;
+
   return (
     <BrowserRouter>
       {shell === 'topbar' ? (
@@ -103,14 +108,14 @@ export default function App() {
                 </div>
               </div>
               <nav className="topbar-nav" aria-label="Primary">
-                <NavLink to="/" end className={topNavClass}>Directory</NavLink>
+                {!unauthorized ? <NavLink to="/" end className={topNavClass}>Directory</NavLink> : null}
                 {user?.role === 'admin' ? <NavLink to="/admin" className={topNavClass}>Admin</NavLink> : null}
                 {!user ? <NavLink to="/login" className={topNavClass}>Log in</NavLink> : null}
                 {user ? <button type="button" className="topbar-link" onClick={onLogout}>Log out</button> : null}
               </nav>
             </div>
           </header>
-          <div className="topbar-content">{routes}</div>
+          <div className="topbar-content">{content}</div>
         </div>
       ) : (
         <main className="app-shell">
@@ -126,13 +131,13 @@ export default function App() {
             </header>
 
             <nav className="app-nav" aria-label="Primary">
-              <NavLink to="/" end className={heroNavClass}>Directory</NavLink>
+              {!unauthorized ? <NavLink to="/" end className={heroNavClass}>Directory</NavLink> : null}
               {user?.role === 'admin' ? <NavLink to="/admin" className={heroNavClass}>Admin</NavLink> : null}
               {!user ? <NavLink to="/login" className={heroNavClass}>Log in</NavLink> : null}
               {user ? <button type="button" className="app-nav-link" onClick={onLogout}>Log out</button> : null}
             </nav>
 
-            {routes}
+            {content}
           </section>
         </main>
       )}

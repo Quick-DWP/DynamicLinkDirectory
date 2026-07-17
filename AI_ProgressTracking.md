@@ -227,6 +227,15 @@
 - Verified against a throwaway `PORT=9009` instance (same shared DB): 9-check API script — note saves/edits/clears, admin list returns it, directory payload has neither the `note` key nor the secret text. Added a committed Playwright regression test (`Devtools`) asserting the same + the editor field; all 6 green.
 - ACTION for the running app: restart the portal (`run.bat` / `pull-run.bat`) so the new backend loads — the `note` column already exists in the DB (patch ran), but the live `:9008` server is still on the old code until restarted.
 
+### 2026-07-17 — Nullable role + domain-gated Microsoft provisioning + unauthorized screen
+
+- `role` is now nullable (model `allowNull: true`; patch drops NOT NULL + default 'admin'). null = "no access".
+- Microsoft JIT: new sign-ins get `viewer` only if their email domain matches `auth.azure.auto_provision_domain` (comma-separated allowed; set to `quick-transformation.com` in the Quick-DWP config). Others are still created (so admins can grant access later) but with **no role**. If the domain isn't configured, behaviour is unchanged (all sign-ins become viewers) — backward compatible.
+- Authorization: `gateView` now 403s an authenticated account whose role isn't admin/viewer (directory + attachments). `requireAdmin` already blocks them. A role-less, signed-in user sees a dedicated **"Not authorized — contact an administrator"** screen (`Unauthorized.tsx`); the whole app short-circuits to it and the nav shows only Log out. `isAuthorized()` helper in `auth.ts`; `AuthUser.role`/`AdminUser.role` now `string | null`.
+- Admin Users editor: role select gained a **"No access (unauthorized)"** option; the list shows `no access` for null-role accounts. Create/patch store an empty role as null.
+- Verified on `PORT=9009`: 12-check API script (null role stored, no-role can log in but 403 on directory/attachments/admin, admin grant→200, revoke→403) + Playwright unauthorized-screen test. 10/10 green.
+- CONFIG (gitignored, not committed): `Backend/config.json` gained `auth.azure.auto_provision_domain: "quick-transformation.com"`. Restart the portal to apply.
+
 ### 2026-07-17 — Admin routing + save-keeps-selection + modal preview + UX pass
 
 - Admin tabs are now real routes (`/admin/:tab`; `/admin` redirects to `/admin/categories`). Refresh and deep links land on the same section. Driven by `useParams`/`useNavigate` in `AdminPage`; unknown slugs redirect to categories. SPA fallback already serves `index.html` for deep links.

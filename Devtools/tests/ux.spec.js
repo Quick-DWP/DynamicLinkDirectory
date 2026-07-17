@@ -255,6 +255,55 @@ test.describe('Link attachments', () => {
   });
 });
 
+test.describe('No-role accounts are unauthorized', () => {
+  test('a role-less account sees "Not authorized", not the directory', async ({ page }) => {
+    if (!(await loginAsAdmin(page))) test.skip(true, 'Login did not succeed.');
+
+    const U = { username: '__norole_ux__', password: 'norolepass123' };
+    // Create (resetting any prior) a no-role user with a password, via the admin API.
+    const uuid = await page.evaluate(async (U) => {
+      const token = localStorage.getItem('dld_token') || '';
+      const h = { Authorization: `Bearer ${token}` };
+      const jh = { ...h, 'Content-Type': 'application/json' };
+      const list = await (await fetch('/api/users', { headers: h })).json();
+      for (const x of (list.data || [])) if (x.username === U.username) await fetch(`/api/users/${x.uuid}`, { method: 'DELETE', headers: h });
+      const r = await (await fetch('/api/users', { method: 'POST', headers: jh, body: JSON.stringify({ username: U.username, password: U.password, role: '', display_name: 'No Role' }) })).json();
+      return r.data?.uuid;
+    }, U);
+    expect(uuid).toBeTruthy();
+
+    // Sign out (full reload clears the in-memory auth store) and sign in as them.
+    await page.evaluate(() => localStorage.removeItem('dld_token'));
+    await page.goto('/login');
+    const card = loginCard(page);
+    await expect(card).toBeVisible();
+    await typeInto(card.locator('input[autocomplete="username"]'), U.username);
+    await typeInto(card.locator('input[type="password"]'), U.password);
+    await card.locator('button.login-submit').click();
+    await page.waitForURL((u) => new URL(u).pathname === '/', { timeout: 8000 }).catch(() => {});
+
+    // Unauthorized screen; no Directory nav; directory API blocked (403).
+    await expect(page.getByRole('heading', { name: 'Not authorized' })).toBeVisible();
+    await expect(page.locator('nav a', { hasText: 'Directory' })).toHaveCount(0);
+    const status = await page.evaluate(async () => {
+      const t = localStorage.getItem('dld_token') || '';
+      const r = await fetch('/api/directory', { headers: { Authorization: `Bearer ${t}` } });
+      return r.status;
+    });
+    expect(status).toBe(403);
+    await shot(page, '11-unauthorized');
+
+    // Cleanup: sign back in as admin and delete the throwaway user.
+    await page.evaluate(() => localStorage.removeItem('dld_token'));
+    if (await loginAsAdmin(page)) {
+      await page.evaluate(async (id) => {
+        const t = localStorage.getItem('dld_token') || '';
+        await fetch(`/api/users/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
+      }, uuid);
+    }
+  });
+});
+
 test.describe('Link note is admin-only', () => {
   test('editor exposes a Note field; the public directory never returns it', async ({ page }) => {
     if (!(await loginAsAdmin(page))) {

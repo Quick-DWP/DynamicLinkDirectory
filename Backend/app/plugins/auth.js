@@ -59,6 +59,10 @@ export default fp(async function (fastify) {
     if (!(await viewLoginRequired(fastify))) return // public when login isn't required
     const r = await validate(request)
     if (r.code) return reply.code(r.code).send({ ok: false, message: r.message })
+    // Authenticated but role-less accounts are not authorized to view anything.
+    if (r.user.role !== 'admin' && r.user.role !== 'viewer') {
+      return reply.code(403).send({ ok: false, message: 'Your account is not authorized to view this directory.' })
+    }
     request.user = r.user
     request.session = r.session
   })

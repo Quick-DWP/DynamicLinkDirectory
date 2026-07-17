@@ -235,7 +235,7 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
   const selectUser = (u: AdminUser | null) => {
     if (!u) { setUserSelected(null); setUserForm(EMPTY_USER); return; }
     setUserSelected(u.uuid);
-    setUserForm({ username: u.username, email: u.email || '', display_name: u.display_name, role: u.role, password: '', is_active: u.is_active });
+    setUserForm({ username: u.username, email: u.email || '', display_name: u.display_name, role: u.role || '', password: '', is_active: u.is_active });
   };
 
   const saveUser = () => guard('users', async () => {
@@ -754,7 +754,7 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
                 <strong>{u.display_name || u.username}</strong>
                 <span>{u.username.includes('@') ? u.username : `@${u.username}`}</span>
                 <div className="pill-row compact">
-                  <span className="pill">{u.role}</span>
+                  <span className="pill">{u.role || 'no access'}</span>
                   <span className="pill">{u.is_active ? 'active' : 'disabled'}</span>
                   {u.uuid === user.uuid ? <span className="pill">you</span> : null}
                 </div>
@@ -778,9 +778,10 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
           </label>
           <div className="field-row">
             <label className="field"><span>Role</span>
-              <select value={userForm.role === 'admin' ? 'admin' : 'viewer'} onChange={(e) => setUserForm((f) => ({ ...f, role: e.target.value }))}>
+              <select value={userForm.role || ''} onChange={(e) => setUserForm((f) => ({ ...f, role: e.target.value }))}>
                 <option value="admin">Admin (can manage)</option>
                 <option value="viewer">Viewer (can only view)</option>
+                <option value="">No access (unauthorized)</option>
               </select>
             </label>
             <div className="field"><span>Active</span>

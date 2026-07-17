@@ -45,9 +45,8 @@ export default (sequelize, DataTypes, schemas, choices, hooks) => {
             },
             role: {
                 type: DataTypes.STRING,
-                allowNull: false,
-                defaultValue: "admin",
-                comment: "Role of the user; admin can manage the directory",
+                allowNull: true,
+                comment: "Role of the user: 'admin' manages, 'viewer' can view, null = no access (unauthorized)",
             },
             is_active: {
                 type: DataTypes.BOOLEAN,

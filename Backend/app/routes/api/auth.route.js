@@ -141,10 +141,21 @@ export default async function authRoutes(fastify) {
     })
 
     if (!user) {
-      // Auto-provision (JIT) new Microsoft sign-ins as viewers, unless disabled.
+      // Auto-provision (JIT) new Microsoft sign-ins, unless disabled.
       if (az.auto_provision === false) {
         return reply.code(403).send({ ok: false, message: 'This Microsoft account is not authorized in this system.' })
       }
+      // Grant the 'viewer' role only to configured domain(s); everyone else is
+      // created with NO role (null) and lands on the "unauthorized" screen until
+      // an admin grants access. If no domain is configured, keep the old
+      // behaviour (all sign-ins become viewers).
+      const domains = String(az.auto_provision_domain || '')
+        .split(',')
+        .map((d) => d.trim().toLowerCase().replace(/^@/, ''))
+        .filter(Boolean)
+      const emailDomain = email.toLowerCase().split('@')[1] || ''
+      const role = domains.length === 0 ? 'viewer' : (domains.includes(emailDomain) ? 'viewer' : null)
+
       let username = email
       for (let n = 1; await db.Users.findOne({ where: { username } }); n += 1) {
         username = `${email}-${n}`
@@ -155,7 +166,7 @@ export default async function authRoutes(fastify) {
         display_name: name || email,
         password_hash: null,
         password_salt: null,
-        role: 'viewer',
+        role,
         is_active: true,
       })
     } else if (!user.is_active) {

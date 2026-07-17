@@ -5,7 +5,7 @@ export type AdminUser = {
   username: string;
   email: string | null;
   display_name: string;
-  role: string;
+  role: string | null;
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;

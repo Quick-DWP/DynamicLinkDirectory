@@ -19,6 +19,10 @@ export default async function applySchemaPatches(sequelize, schemas) {
         `ALTER TABLE "${schema}"."users" ADD COLUMN IF NOT EXISTS "email" VARCHAR(255);`,
         `ALTER TABLE "${schema}"."users" ALTER COLUMN "password_hash" DROP NOT NULL;`,
         `ALTER TABLE "${schema}"."users" ALTER COLUMN "password_salt" DROP NOT NULL;`,
+        // Role may be null (no access) — e.g. Microsoft sign-ins from outside the
+        // auto-provision domain. Drop the old NOT NULL + default 'admin'.
+        `ALTER TABLE "${schema}"."users" ALTER COLUMN "role" DROP NOT NULL;`,
+        `ALTER TABLE "${schema}"."users" ALTER COLUMN "role" DROP DEFAULT;`,
     ];
 
     for (const sql of statements) {

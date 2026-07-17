@@ -77,7 +77,7 @@ export default async function userRoutes(fastify) {
       display_name: text(body.display_name) || username,
       password_hash: creds.hash,
       password_salt: creds.salt,
-      role: text(body.role) || 'admin',
+      role: text(body.role) || null,
       is_active: body.is_active === undefined ? true : Boolean(body.is_active),
     })
     return reply.code(201).send({ ok: true, data: publicUser(row) })
@@ -94,7 +94,7 @@ export default async function userRoutes(fastify) {
     const body = request.body || {}
     const next = {}
     if (body.display_name !== undefined) next.display_name = text(body.display_name)
-    if (body.role !== undefined) next.role = text(body.role) || row.role
+    if (body.role !== undefined) next.role = text(body.role) || null
     if (body.is_active !== undefined) next.is_active = Boolean(body.is_active)
     if (body.email !== undefined) {
       const email = text(body.email) || null

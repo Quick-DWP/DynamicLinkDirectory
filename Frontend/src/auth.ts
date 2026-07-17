@@ -6,9 +6,15 @@ export type AuthUser = {
   username: string;
   email?: string | null;
   display_name: string;
-  role: string;
+  role: string | null;
   last_login_at: string | null;
 };
+
+// A signed-in account with no usable role (e.g. a Microsoft sign-in from outside
+// the auto-provision domain) is authenticated but NOT authorized.
+export function isAuthorized(user: AuthUser | null): boolean {
+  return !!user && (user.role === 'admin' || user.role === 'viewer');
+}
 
 const TOKEN_KEY = 'dld_token';
 
