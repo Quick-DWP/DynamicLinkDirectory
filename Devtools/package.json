@@ -1,0 +1,14 @@
+{
+  "name": "dld-devtools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Playwright UX/UI smoke tests for the Dynamic Link Directory portal. Not part of the shipped app.",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "install:browser": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

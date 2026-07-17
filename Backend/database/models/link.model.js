@@ -66,6 +66,11 @@ export default (sequelize, DataTypes, schemas, choices, hooks) => {
                 defaultValue: true,
                 comment: "When false the link is hidden from the public directory",
             },
+            note: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+                comment: "Admin-only internal remark; never included in the public directory payload",
+            },
         },
         {
             tableName: "links",

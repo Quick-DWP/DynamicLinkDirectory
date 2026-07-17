@@ -21,9 +21,9 @@ const ADMIN_TABS = [
 ] as const;
 type AdminTab = (typeof ADMIN_TABS)[number]['id'];
 
-const EMPTY_USER = { username: '', email: '', display_name: '', role: 'admin', password: '', is_active: true };
+const EMPTY_USER = { username: '', email: '', display_name: '', role: 'viewer', password: '', is_active: true };
 const EMPTY_CATEGORY = { name: '', description: '', icon: '', color: '', sort_order: 0, default_expanded: false, is_active: true };
-const EMPTY_LINK = { title: '', url: '', description: '', icon: '', category_id: '', sort_order: 0, open_in_new_tab: true, is_active: true };
+const EMPTY_LINK = { title: '', url: '', description: '', note: '', icon: '', category_id: '', sort_order: 0, open_in_new_tab: true, is_active: true };
 
 function withScheme(raw: string): string {
   const v = raw.trim();
@@ -66,7 +66,7 @@ export default function AdminPage({ onSettingsSaved }: { onSettingsSaved: () => 
   }
 
   if (!user) {
-    return <LoginGate heading="Admin sign in" subtext="Sign in with an admin account to manage the directory." />;
+    return <LoginGate eyebrow="Admin" heading="Sign in" subtext="Use an admin account to manage the directory." />;
   }
 
   if (user.role !== 'admin') {
@@ -332,7 +332,7 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
     if (!link) { setLinkSelected(null); setLinkForm({ ...EMPTY_LINK, category_id: catSelected || categories[0]?.uuid || '' }); return; }
     setLinkSelected(link.uuid);
     setLinkForm({
-      title: link.title, url: link.url, description: link.description, icon: link.icon || '',
+      title: link.title, url: link.url, description: link.description, note: link.note || '', icon: link.icon || '',
       category_id: link.category_id || '', sort_order: link.sort_order,
       open_in_new_tab: link.open_in_new_tab, is_active: link.is_active,
     });
@@ -627,6 +627,7 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
                   <span className="pill">{categoryName(link.category_id)}</span>
                   <span className="pill">order {link.sort_order}</span>
                   <span className="pill">{link.is_active ? 'active' : 'hidden'}</span>
+                  {link.note ? <span className="pill" title={link.note}>📝 note</span> : null}
                   <span className="count-badge">👁 {link.click_count}</span>
                 </div>
               </button>
@@ -652,6 +653,9 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
           {duplicateLink ? <p className="dld-hint warn">⚠ “{duplicateLink.title}” already uses this URL.</p> : null}
           <label className="field"><span>Description</span>
             <textarea value={linkForm.description} onChange={(e) => setLinkForm((f) => ({ ...f, description: e.target.value }))} rows={2} />
+          </label>
+          <label className="field"><span>Note (admin only)</span>
+            <textarea value={linkForm.note} onChange={(e) => setLinkForm((f) => ({ ...f, note: e.target.value }))} rows={2} placeholder="Internal remark — visible to admins here only, never shown on the directory." />
           </label>
           <div className="field-row">
             <div className="field"><span>Icon (emoji)</span>
@@ -729,7 +733,7 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
                 onClick={() => selectUser(u)}
               >
                 <strong>{u.display_name || u.username}</strong>
-                <span>@{u.username}</span>
+                <span>{u.username.includes('@') ? u.username : `@${u.username}`}</span>
                 <div className="pill-row compact">
                   <span className="pill">{u.role}</span>
                   <span className="pill">{u.is_active ? 'active' : 'disabled'}</span>

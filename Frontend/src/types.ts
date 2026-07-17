@@ -24,6 +24,8 @@ export type Link = {
   click_count: number;
   open_in_new_tab: boolean;
   is_active: boolean;
+  // Admin-only remark. Present on the admin link API; never returned by /api/directory.
+  note?: string | null;
   created_at: string;
   updated_at: string;
 };

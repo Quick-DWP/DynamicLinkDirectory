@@ -185,6 +185,7 @@ export default function DirectoryPage() {
   if (needLogin) {
     return (
       <LoginGate
+        eyebrow="Private"
         heading="Sign in to view"
         subtext="This directory is private. Please sign in to continue."
         onLoggedIn={() => { setNeedLogin(false); void loadDirectory(); }}
@@ -226,7 +227,11 @@ export default function DirectoryPage() {
       {!loading && !error && filteredGroups.length === 0 ? (
         <article className="panel">
           <p className="muted-copy">
-            {search ? `No links match "${search}".` : 'No links yet. Add some from the Admin page.'}
+            {search
+              ? `No links match "${search}".`
+              : user?.role === 'admin'
+                ? 'No links yet. Add some from the Admin page.'
+                : 'No links have been added yet.'}
           </p>
         </article>
       ) : null}

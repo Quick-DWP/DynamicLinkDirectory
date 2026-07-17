@@ -12,6 +12,8 @@ export default async function applySchemaPatches(sequelize, schemas) {
     const statements = [
         `ALTER TABLE "${schema}"."links" ADD COLUMN IF NOT EXISTS "click_count" INTEGER NOT NULL DEFAULT 0;`,
         `ALTER TABLE "${schema}"."links" ADD COLUMN IF NOT EXISTS "open_in_new_tab" BOOLEAN NOT NULL DEFAULT true;`,
+        // Admin-only remark on a link; nullable, never exposed on the public directory.
+        `ALTER TABLE "${schema}"."links" ADD COLUMN IF NOT EXISTS "note" TEXT;`,
         `ALTER TABLE "${schema}"."categories" ADD COLUMN IF NOT EXISTS "default_expanded" BOOLEAN NOT NULL DEFAULT false;`,
         // Microsoft (Azure AD) sign-in: match users by email; password becomes optional.
         `ALTER TABLE "${schema}"."users" ADD COLUMN IF NOT EXISTS "email" VARCHAR(255);`,

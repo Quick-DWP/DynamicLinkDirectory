@@ -4,11 +4,12 @@ import { fetchAzureConfig, startAzureLogin } from '../azure';
 
 type Props = {
   onLoggedIn?: (user: AuthUser) => void;
+  eyebrow?: string;
   heading?: string;
   subtext?: string;
 };
 
-export default function LoginGate({ onLoggedIn, heading = 'Sign in', subtext = 'Enter your credentials to continue.' }: Props) {
+export default function LoginGate({ onLoggedIn, eyebrow = 'Account', heading = 'Sign in', subtext = 'Enter your credentials to continue.' }: Props) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -40,14 +41,14 @@ export default function LoginGate({ onLoggedIn, heading = 'Sign in', subtext = '
   return (
     <section className="page-stack">
       <article className="panel login-card">
-        <p className="eyebrow">Sign in</p>
+        <p className="eyebrow">{eyebrow}</p>
         <h2>{heading}</h2>
         <p className="muted-copy">{subtext}</p>
 
         {error ? <p className="message error">{error}</p> : null}
 
         <label className="field"><span>Username</span>
-          <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
+          <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoFocus />
         </label>
         <label className="field"><span>Password</span>
           <input

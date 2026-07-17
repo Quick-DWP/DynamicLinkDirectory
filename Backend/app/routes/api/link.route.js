@@ -23,6 +23,7 @@ function buildLinkPatch(body) {
   if (body.sort_order !== undefined) next.sort_order = Number(body.sort_order) || 0
   if (body.is_active !== undefined) next.is_active = Boolean(body.is_active)
   if (body.open_in_new_tab !== undefined) next.open_in_new_tab = Boolean(body.open_in_new_tab)
+  if (body.note !== undefined) next.note = normalizeText(body.note) || null
   return next
 }
 
@@ -69,6 +70,7 @@ export default async function linkRoutes(fastify) {
       sort_order: Number(body.sort_order) || 0,
       is_active: body.is_active === undefined ? true : Boolean(body.is_active),
       open_in_new_tab: body.open_in_new_tab === undefined ? true : Boolean(body.open_in_new_tab),
+      note: normalizeText(body.note) || null,
     })
     return reply.code(201).send({ ok: true, data: row })
   })

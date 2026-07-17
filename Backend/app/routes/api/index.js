@@ -48,6 +48,8 @@ export default async function (fastify) {
 
     const activeLinks = await fastify.db.Links.findAll({
       where: { is_active: true },
+      // `note` is an admin-only remark — never expose it on the public directory.
+      attributes: { exclude: ['note'] },
       order: [['sort_order', 'ASC'], ['title', 'ASC']],
     })
 

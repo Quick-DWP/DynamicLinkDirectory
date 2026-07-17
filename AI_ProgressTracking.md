@@ -212,6 +212,25 @@
 - Files: `azure.ts`, `main.tsx`, `App.tsx`, `pages/DirectoryPage.tsx`, `components/LoginGate.tsx`, `index.css`.
 - Next action: optional `azure.admin_emails` auto-elevation so the first MS admin doesn't need a manual bump.
 
+### 2026-07-17 — UX/UI sanity pass
+
+- Summary: Reviewed the app for UX that doesn't make sense and fixed: (a) login card no longer reads "Sign in / Sign in / Sign in to continue" — the eyebrow is now a contextual label (`Account` / `Admin` / `Private`) via a new `eyebrow` prop on `LoginGate`; (b) "New user" in Admin now defaults to **Viewer** instead of Admin (least-privilege; matches MS JIT provisioning); (c) empty-directory message is role-aware — viewers see "No links have been added yet." instead of being told to use the Admin page they can't reach; (d) classic-shell hero `<h1>` relaxed (`max-width` 11ch→20ch, `line-height` 1→1.05, slightly smaller clamp) so the long rebranded title no longer wraps into a cramped, colliding column; (e) username field autofocuses on the login form.
+- Files: `components/LoginGate.tsx`, `App.tsx`, `pages/AdminPage.tsx`, `pages/DirectoryPage.tsx`, `index.css`.
+- Also fixed (surfaced by the Playwright screenshots): MS-provisioned accounts (username = email) showed a double `@` in the Admin user list (`@ratnarit@quick-transformation.com`); the handle now drops the leading `@` when the username is an email.
+- Added `Devtools/` — a Playwright UX/UI smoke harness (not shipped; `Devtools/{node_modules,test-results,playwright-report,screenshots}` are git-ignored). 5 tests: login-card copy (`/login`, admin gate, private gate), classic-shell long-title wrap (rewrites `/api/settings` in-browser only — no DB write), and admin "New user" defaulting to Viewer + login landing on the directory. Run: `cd Devtools && npm i && npm run install:browser && npm test` against a running portal (`BASE_URL` overridable).
+- Verified: `npm run build` (tsc + vite) clean; all 5 Playwright tests green; screenshots eyeballed.
+
+### 2026-07-17 — Admin-only link "note"
+
+- Summary: Links now have an optional `note` — an internal remark admins can add/see in the Links editor that is **never** exposed on the public directory. DB: nullable `note TEXT` on the `links` model + idempotent `ADD COLUMN IF NOT EXISTS "note" TEXT` patch (sync.alter stays false). API: `POST/PATCH /api/links` accept `note` (empty → null); admin `GET /api/links` returns it; **`GET /api/directory` excludes it** via `attributes: { exclude: ['note'] }` (defense in depth — DirectoryPage never renders it either). UI: "Note (admin only)" textarea under Description in the link editor, plus a `📝 note` pill on list cards that have one.
+- Files: `Backend/database/models/link.model.js`, `Backend/database/patches.js`, `Backend/app/routes/api/link.route.js`, `Backend/app/routes/api/index.js`, `Frontend/src/types.ts`, `Frontend/src/pages/AdminPage.tsx`.
+- Verified against a throwaway `PORT=9009` instance (same shared DB): 9-check API script — note saves/edits/clears, admin list returns it, directory payload has neither the `note` key nor the secret text. Added a committed Playwright regression test (`Devtools`) asserting the same + the editor field; all 6 green.
+- ACTION for the running app: restart the portal (`run.bat` / `pull-run.bat`) so the new backend loads — the `note` column already exists in the DB (patch ran), but the live `:9008` server is still on the old code until restarted.
+
+### 2026-07-17 — Added admin account
+
+- kanokporn@quick-transformation.com created as an **admin** (Microsoft-only sign-in; username = email; display name "Kanokporn"). Data change only — no code.
+
 ---
 
 ## Template Updates

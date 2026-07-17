@@ -16,7 +16,7 @@ function LoginRoute() {
   const { user, loaded } = useAuth();
   const navigate = useNavigate();
   if (loaded && user) return <Navigate to="/" replace />;
-  return <LoginGate heading="Sign in" subtext="Sign in to continue." onLoggedIn={() => navigate('/', { replace: true })} />;
+  return <LoginGate onLoggedIn={() => navigate('/', { replace: true })} />;
 }
 
 export default function App() {

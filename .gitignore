@@ -5,6 +5,11 @@ AI_TemplateCreation.md
 
 Backend/public/dist/
 
+Devtools/node_modules/
+Devtools/test-results/
+Devtools/playwright-report/
+Devtools/screenshots/
+
 *.log
 .DS_Store
 Thumbs.db
