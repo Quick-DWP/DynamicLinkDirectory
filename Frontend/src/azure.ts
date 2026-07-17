@@ -49,6 +49,8 @@ export async function handleAzureRedirect(): Promise<string | null> {
   const cfg = await fetchAzureConfig();
   const instance = await getMsal(cfg);
   if (!instance) return null;
-  const result = await instance.handleRedirectPromise();
+  // Don't bounce back to the page where login started (e.g. /admin); we land
+  // the user on the directory ourselves after sign-in.
+  const result = await instance.handleRedirectPromise({ navigateToLoginRequestUrl: false });
   return result?.idToken || null;
 }

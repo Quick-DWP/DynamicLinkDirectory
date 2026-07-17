@@ -16,7 +16,8 @@ async function handleMicrosoftReturn() {
     const idToken = await handleAzureRedirect()
     if (idToken) {
       await azureLogin(idToken)
-      window.history.replaceState({}, document.title, window.location.pathname)
+      // Land on the directory after Microsoft sign-in (not wherever login started).
+      window.history.replaceState({}, document.title, '/')
     }
   } catch (err) {
     sessionStorage.setItem('msLoginError', err instanceof Error ? err.message : String(err))
