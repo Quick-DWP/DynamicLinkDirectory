@@ -1,8 +1,10 @@
+import { fn, col } from 'sequelize'
 import categoryRoutes from './category.route.js'
 import linkRoutes from './link.route.js'
 import authRoutes from './auth.route.js'
 import userRoutes from './user.route.js'
 import settingRoutes from './setting.route.js'
+import attachmentRoutes from './attachment.route.js'
 
 export default async function (fastify) {
   // You can add api-level permissions/middleware here in the future
@@ -53,14 +55,32 @@ export default async function (fastify) {
       order: [['sort_order', 'ASC'], ['title', 'ASC']],
     })
 
+    // How many attachments each link has, so the UI can show the button only when
+    // there's something to see (bytes are never fetched here).
+    const attachmentCounts = new Map()
+    if (fastify.db.LinkAttachments) {
+      const counts = await fastify.db.LinkAttachments.findAll({
+        attributes: ['link_id', [fn('COUNT', col('uuid')), 'n']],
+        group: ['link_id'],
+        raw: true,
+      })
+      for (const c of counts) attachmentCounts.set(c.link_id, Number(c.n))
+    }
+
+    const toPublicLink = (link) => ({
+      ...link.toJSON(),
+      attachment_count: attachmentCounts.get(link.uuid) || 0,
+    })
+
     const linksByCategory = new Map()
     const uncategorized = []
     for (const link of activeLinks) {
+      const pub = toPublicLink(link)
       if (link.category_id) {
         if (!linksByCategory.has(link.category_id)) linksByCategory.set(link.category_id, [])
-        linksByCategory.get(link.category_id).push(link)
+        linksByCategory.get(link.category_id).push(pub)
       } else {
-        uncategorized.push(link)
+        uncategorized.push(pub)
       }
     }
 
@@ -108,4 +128,5 @@ export default async function (fastify) {
   await fastify.register(settingRoutes, { prefix: '/settings' })
   await fastify.register(categoryRoutes, { prefix: '/categories' })
   await fastify.register(linkRoutes, { prefix: '/links' })
+  await fastify.register(attachmentRoutes, { prefix: '/attachments' })
 }

@@ -26,6 +26,8 @@ export type Link = {
   is_active: boolean;
   // Admin-only remark. Present on the admin link API; never returned by /api/directory.
   note?: string | null;
+  // Number of files attached to this link. Only present on /api/directory.
+  attachment_count?: number;
   created_at: string;
   updated_at: string;
 };

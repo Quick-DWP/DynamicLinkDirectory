@@ -6,6 +6,7 @@ import type { DirectoryGroup, Link } from '../types';
 import LinkIcon from '../components/LinkIcon';
 import CopyLinkButton from '../components/CopyLinkButton';
 import LoginGate from '../components/LoginGate';
+import AttachmentModal from '../components/AttachmentModal';
 
 const keyOf = (group: DirectoryGroup) => group.uuid ?? 'uncategorized';
 
@@ -14,6 +15,12 @@ const GotoIcon = () => (
     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
     <polyline points="15 3 21 3 21 9" />
     <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
+const PaperclipIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
   </svg>
 );
 
@@ -26,6 +33,8 @@ export default function DirectoryPage() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [needLogin, setNeedLogin] = useState(false);
+  // Which link's attachments modal is open (null = closed).
+  const [attachFor, setAttachFor] = useState<{ uuid: string; title: string } | null>(null);
   // Categories start collapsed (auto-collapse); user can expand individually.
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   // Sidebar layout: which category is shown in the content pane.
@@ -135,6 +144,24 @@ export default function DirectoryPage() {
     onClick: () => trackClick(link.uuid),
   });
 
+  // Attachments button — only when the link actually has files.
+  const attachButton = (link: Link, sm = false) => {
+    const n = link.attachment_count || 0;
+    if (!n) return null;
+    return (
+      <button
+        type="button"
+        className={`attach-btn${sm ? ' sm' : ''}`}
+        title={`${n} attachment${n === 1 ? '' : 's'}`}
+        aria-label={`View ${n} attachment${n === 1 ? '' : 's'} for ${link.title}`}
+        onClick={() => setAttachFor({ uuid: link.uuid, title: link.title })}
+      >
+        <PaperclipIcon />
+        <span className="attach-count">{n}</span>
+      </button>
+    );
+  };
+
   const renderLink = (link: Link) => {
     if (theme === 'tiles') {
       // Launcher style: the whole tile is the link.
@@ -154,6 +181,7 @@ export default function DirectoryPage() {
             <span className="lr-title">{link.title}</span>
             <span className="lr-host">{hostnameOf(link.url)}</span>
           </div>
+          {attachButton(link, true)}
           <CopyLinkButton url={ensureHref(link.url)} title={link.title} className="copy-btn sm" />
           <a className="goto-btn sm" title={`Open ${link.title}`} aria-label={`Open ${link.title}`} {...linkAnchorProps(link)}>
             <GotoIcon />
@@ -173,6 +201,7 @@ export default function DirectoryPage() {
           </div>
         </div>
         <div className="link-actions">
+          {attachButton(link)}
           <CopyLinkButton url={ensureHref(link.url)} title={link.title} />
           <a className="goto-btn" title={`Open ${link.title}`} aria-label={`Open ${link.title}`} {...linkAnchorProps(link)}>
             <GotoIcon />
@@ -298,6 +327,10 @@ export default function DirectoryPage() {
         })}
       </section>
       )}
+
+      {attachFor ? (
+        <AttachmentModal linkId={attachFor.uuid} title={attachFor.title} onClose={() => setAttachFor(null)} />
+      ) : null}
     </section>
   );
 }

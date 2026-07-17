@@ -2482,3 +2482,334 @@ select:disabled {
 		grid-template-columns: 1fr;
 	}
 }
+
+/* --- Attachments --- */
+
+/* Directory action button (sits beside copy + goto) */
+.attach-btn {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	height: 42px;
+	padding: 0 12px;
+	border-radius: 14px;
+	border: 1px solid var(--line);
+	background: var(--card);
+	color: var(--ink);
+	cursor: pointer;
+	transition: transform 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.attach-btn:hover {
+	transform: translateY(-1px);
+	border-color: var(--accent);
+}
+
+.attach-btn .attach-count {
+	font-size: 0.8rem;
+	font-weight: 800;
+}
+
+.attach-btn.sm {
+	height: 34px;
+	padding: 0 9px;
+	border-radius: 10px;
+	gap: 4px;
+}
+
+.attach-btn.sm .attach-count {
+	font-size: 0.72rem;
+}
+
+/* Viewer modal */
+.modal-card.att-modal {
+	width: min(940px, 100%);
+	max-height: 88vh;
+	display: flex;
+	flex-direction: column;
+}
+
+.att-modal-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.att-modal-head h3 {
+	margin: 2px 0 0;
+	font-size: 1.2rem;
+}
+
+.att-close {
+	flex: 0 0 auto;
+	width: 34px;
+	height: 34px;
+	border-radius: 999px;
+	border: 1px solid var(--line);
+	background: var(--card);
+	color: var(--muted);
+	font-size: 1.3rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.att-close:hover {
+	border-color: var(--accent);
+	color: var(--ink);
+}
+
+.att-modal-body {
+	display: grid;
+	grid-template-columns: 260px minmax(0, 1fr);
+	gap: 14px;
+	min-height: 0;
+	flex: 1;
+}
+
+.att-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	overflow-y: auto;
+	max-height: 66vh;
+}
+
+.att-list-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.att-item {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 9px 10px;
+	border-radius: 12px;
+	border: 1px solid var(--line);
+	background: var(--card);
+	text-align: left;
+	cursor: pointer;
+	color: var(--ink);
+}
+
+.att-item.on {
+	border-color: var(--accent);
+	background: var(--accent-soft);
+}
+
+.att-emoji {
+	flex: 0 0 auto;
+	font-size: 1.2rem;
+	line-height: 1;
+}
+
+.att-item-main {
+	min-width: 0;
+	display: grid;
+	gap: 2px;
+}
+
+.att-name {
+	font-weight: 700;
+	font-size: 0.85rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.att-meta {
+	color: var(--muted);
+	font-size: 0.72rem;
+	overflow-wrap: anywhere;
+}
+
+.att-dl {
+	flex: 0 0 auto;
+	width: 34px;
+	height: 34px;
+	border-radius: 10px;
+	border: 1px solid var(--line);
+	background: var(--ink);
+	color: #fff8f0;
+	cursor: pointer;
+	font-size: 1rem;
+}
+
+.att-dl:hover {
+	background: var(--accent-deep);
+}
+
+.att-viewer {
+	min-width: 0;
+	min-height: 300px;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: var(--panel-strong);
+	overflow: hidden;
+	display: flex;
+}
+
+.att-preview-shell {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+}
+
+.att-preview-img {
+	max-width: 100%;
+	max-height: 66vh;
+	margin: auto;
+	object-fit: contain;
+}
+
+.att-preview-frame {
+	width: 100%;
+	height: 66vh;
+	border: 0;
+	background: #fff;
+}
+
+.att-preview-text {
+	margin: 0;
+	padding: 14px;
+	width: 100%;
+	max-height: 66vh;
+	overflow: auto;
+	font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+	font-size: 0.8rem;
+	line-height: 1.5;
+	white-space: pre-wrap;
+	word-break: break-word;
+	color: var(--ink);
+}
+
+.att-preview-state {
+	margin: auto;
+	padding: 24px;
+	text-align: center;
+	display: grid;
+	gap: 12px;
+	place-items: center;
+	color: var(--muted);
+}
+
+.att-preview-state.error {
+	color: #a03535;
+}
+
+/* Admin manager (inside the link editor) */
+.att-section {
+	margin-top: 16px;
+	border-top: 1px dashed var(--line);
+	padding-top: 14px;
+}
+
+.att-manager-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.att-manager-title {
+	font-size: 0.84rem;
+	font-weight: 700;
+}
+
+.att-admin-list {
+	list-style: none;
+	margin: 12px 0 0;
+	padding: 0;
+	display: grid;
+	gap: 8px;
+}
+
+.att-admin-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--card);
+}
+
+.att-admin-main {
+	flex: 1;
+	min-width: 0;
+	display: grid;
+	gap: 2px;
+}
+
+.att-admin-actions {
+	flex: 0 0 auto;
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.att-rename-input {
+	flex: 1;
+	min-width: 0;
+}
+
+.att-empty {
+	margin-top: 10px;
+}
+
+.mini-btn {
+	border: 1px solid var(--line);
+	background: var(--card);
+	color: var(--ink);
+	border-radius: 999px;
+	padding: 5px 11px;
+	font-size: 0.76rem;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.mini-btn:hover {
+	border-color: var(--accent);
+}
+
+.mini-btn.danger {
+	color: #a03535;
+}
+
+.mini-btn.danger:hover {
+	border-color: #b3382f;
+}
+
+.mini-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+	.att-modal-body {
+		grid-template-columns: 1fr;
+	}
+
+	.att-list {
+		max-height: 160px;
+	}
+
+	.att-preview-frame,
+	.att-preview-text {
+		height: 50vh;
+		max-height: 50vh;
+	}
+
+	.att-preview-img {
+		max-height: 50vh;
+	}
+}

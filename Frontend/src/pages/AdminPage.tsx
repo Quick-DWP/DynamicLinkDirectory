@@ -11,6 +11,7 @@ import LayoutPicker from '../components/LayoutPicker';
 import ShellPicker from '../components/ShellPicker';
 import PalettePicker from '../components/PalettePicker';
 import Toggle from '../components/Toggle';
+import AttachmentManager from '../components/AttachmentManager';
 
 const ADMIN_TABS = [
   { id: 'settings', label: 'Site settings' },
@@ -687,6 +688,14 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
             ) : null}
           </div>
           {renderFeedback('link')}
+
+          <div className="att-section">
+            {linkSelected ? (
+              <AttachmentManager linkId={linkSelected} />
+            ) : (
+              <p className="dld-hint">💾 Save the link first — then you can attach files (spec, guideline, manual…).</p>
+            )}
+          </div>
         </article>
       </section>
       )}

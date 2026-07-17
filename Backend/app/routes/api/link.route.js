@@ -99,6 +99,10 @@ export default async function linkRoutes(fastify) {
     const row = await db.Links.findByPk(uuid)
     if (!row) return reply.code(404).send({ ok: false, message: 'link not found' })
 
+    // Remove attached files first (belt-and-suspenders alongside the FK cascade).
+    if (db.LinkAttachments) {
+      await db.LinkAttachments.destroy({ where: { link_id: uuid } })
+    }
     await row.destroy()
     return reply.send({ ok: true, data: { uuid } })
   })

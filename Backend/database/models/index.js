@@ -7,6 +7,7 @@ import userModel from "./user.model.js";
 import sessionModel from "./session.model.js";
 import settingModel from "./setting.model.js";
 import siteAssetModel from "./site_asset.model.js";
+import linkAttachmentModel from "./link_attachment.model.js";
 
 export default function initModels(sequelize, schema) {
     const choices = {
@@ -29,6 +30,7 @@ export default function initModels(sequelize, schema) {
     const Sessions = sessionModel(sequelize, DataTypes, schema, choices, hooks);
     const Settings = settingModel(sequelize, DataTypes, schema, choices, hooks);
     const SiteAssets = siteAssetModel(sequelize, DataTypes, schema, choices, hooks);
+    const LinkAttachments = linkAttachmentModel(sequelize, DataTypes, schema, choices, hooks);
 
     // Associations
     Categories.hasMany(Links, {
@@ -57,6 +59,20 @@ export default function initModels(sequelize, schema) {
         onUpdate: "CASCADE",
     });
 
+    // A link owns many attachments; deleting a link removes its files.
+    Links.hasMany(LinkAttachments, {
+        foreignKey: "link_id",
+        as: "attachments",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+    });
+    LinkAttachments.belongsTo(Links, {
+        foreignKey: "link_id",
+        as: "link",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+    });
+
     return {
         models: {
             LogMessages,
@@ -67,6 +83,7 @@ export default function initModels(sequelize, schema) {
             Sessions,
             Settings,
             SiteAssets,
+            LinkAttachments,
         },
         choices,
     };

@@ -135,6 +135,58 @@ test.describe('Admin user form defaults to least privilege', () => {
   });
 });
 
+test.describe('Link attachments', () => {
+  test('admin attaches a file; viewer previews it in a modal', async ({ page }) => {
+    if (!(await loginAsAdmin(page))) test.skip(true, 'Login did not succeed.');
+
+    // Resolve a target link and make sure the attachments API is present.
+    const info = await page.evaluate(async () => {
+      const token = localStorage.getItem('dld_token') || '';
+      const h = { Authorization: `Bearer ${token}` };
+      const lj = await (await fetch('/api/links', { headers: h })).json();
+      const link = (lj.data || [])[0];
+      if (!link) return { ok: false };
+      const ar = await fetch(`/api/attachments/link/${link.uuid}`, { headers: h });
+      return { ok: ar.ok, uuid: link.uuid, title: link.title };
+    });
+    if (!info.ok) test.skip(true, 'Attachments API not available (restart the backend).');
+
+    // Upload through the admin link editor.
+    await page.goto('/admin');
+    await page.locator('button.admin-tab', { hasText: 'Links' }).click();
+    await page.locator('.item-list .item-card').first().click();
+    const manager = page.locator('.att-manager');
+    await expect(manager).toBeVisible();
+    const pdf = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<<>>\n%%EOF', 'latin1');
+    await manager.locator('input[type="file"]').setInputFiles({ name: 'ux-attach-test.pdf', mimeType: 'application/pdf', buffer: pdf });
+    await expect(page.locator('.att-admin-row', { hasText: 'ux-attach-test.pdf' })).toBeVisible({ timeout: 10000 });
+    await shot(page, '09-admin-attachment-manager');
+
+    // Viewer side: directory shows the button and previews the file.
+    await page.goto('/');
+    await expect(page.locator('.panel-header-row .muted-copy')).not.toHaveText('Loading...', { timeout: 8000 });
+    await page.locator('.dld-toolbar input').first().fill(info.title); // force the group open
+    const card = page.locator('.link-card', { hasText: info.title }).first();
+    const btn = card.locator('.attach-btn');
+    await expect(btn).toBeVisible();
+    await btn.click();
+    await expect(page.locator('.att-modal')).toBeVisible();
+    await expect(page.locator('.att-item', { hasText: 'ux-attach-test.pdf' })).toBeVisible();
+    await expect(page.locator('.att-preview-frame')).toBeVisible({ timeout: 10000 });
+    await shot(page, '10-attachment-modal');
+
+    // Cleanup: remove the uploaded test file.
+    await page.evaluate(async (linkId) => {
+      const token = localStorage.getItem('dld_token') || '';
+      const h = { Authorization: `Bearer ${token}` };
+      const aj = await (await fetch(`/api/attachments/link/${linkId}`, { headers: h })).json();
+      for (const a of (aj.data || [])) {
+        if (a.filename === 'ux-attach-test.pdf') await fetch(`/api/attachments/${a.uuid}`, { method: 'DELETE', headers: h });
+      }
+    }, info.uuid);
+  });
+});
+
 test.describe('Link note is admin-only', () => {
   test('editor exposes a Note field; the public directory never returns it', async ({ page }) => {
     if (!(await loginAsAdmin(page))) {

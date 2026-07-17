@@ -227,6 +227,16 @@
 - Verified against a throwaway `PORT=9009` instance (same shared DB): 9-check API script — note saves/edits/clears, admin list returns it, directory payload has neither the `note` key nor the secret text. Added a committed Playwright regression test (`Devtools`) asserting the same + the editor field; all 6 green.
 - ACTION for the running app: restart the portal (`run.bat` / `pull-run.bat`) so the new backend loads — the `note` column already exists in the DB (patch ran), but the live `:9008` server is still on the old code until restarted.
 
+### 2026-07-17 — Per-link file attachments (+ viewer preview)
+
+- Summary: Each link can now hold many files (spec / guideline / manual…). Admins upload/rename/delete them in the link editor; viewers open an "Attachments" button on the directory to preview or download.
+- Storage: new `link_attachments` table (bytes in Postgres BYTEA, like the logo) — `uuid, rolling_id, link_id(FK→links, CASCADE), filename, mime_type, size, data(BLOB long), sort_order`. Created automatically by `sequelize.sync` (new table; no alter). Model registered + associated in `models/index.js`.
+- API (`/api/attachments`): `GET /link/:linkId` (gateView, metadata only — bytes never listed), `GET /:uuid/raw` (gateView, streams bytes with `nosniff` + sandbox CSP), `POST /link/:linkId` (admin, base64 body, 25 MB cap, MIME allowlist, extension fallback, PDF magic-byte check), `PATCH /:uuid` (admin rename/reorder), `DELETE /:uuid` (admin). Link DELETE also purges attachments (belt-and-suspenders with the FK cascade). `/api/directory` now includes `attachment_count` per link (still excludes `note` + bytes).
+- Preview under the login gate: the raw endpoint follows `require_login`, so an `<img>/<iframe src>` (no bearer) can't load it. Frontend fetches bytes **with the token** into a `blob:` URL — works gated or public. Inline preview for images / PDF / text; other types get a download button. Object URLs are revoked on unmount.
+- Frontend: `attachments.ts` helper; `AttachmentPreview`, viewer `AttachmentModal` (list + preview + per-file download), admin `AttachmentManager` (upload/rename/delete/view). Wired: paperclip button beside copy/goto on the directory (cards + compact), manager in the admin link editor (existing links only). `types.ts` Link gains `attachment_count`. CSS in `index.css`.
+- Verified on `PORT=9009`: a 20-check API script (upload, list has no bytes, raw round-trip + nosniff, directory count, sort_order, 415 for text/html, 400 for fake-PDF, rename, 401 without token, link-delete cascade, cleanup) — all pass. Playwright regression added (admin upload → viewer modal preview); 7/7 green. Screenshots eyeballed.
+- ACTION: restart the portal (`pull-run.bat`) — the `link_attachments` table already exists (created on the 9009 boot), but the live server needs the new routes.
+
 ### 2026-07-17 — Added admin account
 
 - kanokporn@quick-transformation.com created as an **admin** (Microsoft-only sign-in; username = email; display name "Kanokporn"). Data change only — no code.
