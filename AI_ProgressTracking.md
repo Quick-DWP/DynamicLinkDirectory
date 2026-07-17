@@ -183,6 +183,12 @@
 - Summary: `run.bat` is now a full pipeline — installs Backend deps, installs Frontend deps, builds the frontend (→ Backend/public/dist), then starts the backend. Each step aborts on failure. Combined with `pull-run.bat`, one double-click updates + rebuilds + launches.
 - Files: `run.bat`.
 
+### 2026-07-17 14:23
+
+- Summary: Phase 1 closed and tagged `v1.0.0`. Handoff: `origin` repointed from Otenization (personal) to the fork `https://github.com/Quick-DWP/DynamicLinkDirectory.git`; `main` + `v1.0.0` pushed there, upstream tracking set. Phase 2 development continues on the fork.
+- Files: `AI_CarryOn.md`, `AI_ProgressTracking.md`.
+- Pre-prod hardening still queued (not done): env-var secrets, global error handler, npm ci/start.bat + engines, CORS tightening, HTTPS/process manager (ops).
+
 ---
 
 ## Template Updates

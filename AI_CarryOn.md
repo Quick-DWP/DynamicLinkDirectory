@@ -184,7 +184,9 @@ Git workflow policy:
 
 Git state (live):
 
-- `origin` → `https://github.com/Otenization/DynamicLinkDirectory.git`, branch `main`.
+- `origin` → `https://github.com/Quick-DWP/DynamicLinkDirectory.git`, branch `main` (handoff remote; Phase 2 work happens here).
+- Pre-handoff origin was `https://github.com/Otenization/DynamicLinkDirectory.git` (personal); no longer a remote.
+- Phase 1 shipped and tagged `v1.0.0` (pushed to the fork).
 - Local git identity (repo scope): `OteEnded <ratnaritjumnong@gmail.com>`.
 
 ## Suggested Next Steps
