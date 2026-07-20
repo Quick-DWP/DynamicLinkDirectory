@@ -16,6 +16,7 @@ export default function AttachmentManager({ linkId, title }: { linkId: string; t
   const [editing, setEditing] = useState<{ uuid: string; name: string } | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -32,9 +33,14 @@ export default function AttachmentManager({ linkId, title }: { linkId: string; t
     if (!list || list.length === 0) return;
     const chosen = Array.from(list);
     setBusy(true); setMsg(null);
+    setProgress({ done: 0, total: chosen.length });
     let done = 0;
     try {
-      for (const file of chosen) { await uploadAttachment(linkId, file); done += 1; }
+      for (let i = 0; i < chosen.length; i += 1) {
+        setProgress({ done: i + 1, total: chosen.length });
+        await uploadAttachment(linkId, chosen[i]);
+        done += 1;
+      }
       setMsg({ type: 'success', text: `Uploaded ${done} file${done === 1 ? '' : 's'}.` });
       await load();
     } catch (e) {
@@ -42,6 +48,7 @@ export default function AttachmentManager({ linkId, title }: { linkId: string; t
       setMsg({ type: 'error', text: `${done > 0 ? `Uploaded ${done}, then failed: ` : ''}${e instanceof Error ? e.message : 'Upload failed.'}` });
     } finally {
       setBusy(false);
+      setProgress(null);
       if (fileRef.current) fileRef.current.value = '';
     }
   };
@@ -66,7 +73,7 @@ export default function AttachmentManager({ linkId, title }: { linkId: string; t
       <div className="att-manager-head">
         <span className="att-manager-title">Attachments ({files.length})</span>
         <label className="file-btn">
-          {busy ? 'Working…' : '+ Upload file'}
+          {busy ? (progress && progress.total > 1 ? `Uploading ${progress.done}/${progress.total}…` : 'Uploading…') : '+ Upload file'}
           <input ref={fileRef} type="file" multiple accept={ACCEPT} disabled={busy} onChange={(e) => void onFiles(e.target.files)} />
         </label>
       </div>

@@ -195,12 +195,13 @@ test.describe('Link attachments', () => {
   test('admin attaches a file; viewer previews it in a modal', async ({ page }) => {
     if (!(await loginAsAdmin(page))) test.skip(true, 'Login did not succeed.');
 
-    // Resolve a target link and make sure the attachments API is present.
+    // Pick a link that is actually visible on the directory (in an active
+    // category) so the viewer-side assertions can find its card.
     const info = await page.evaluate(async () => {
       const token = localStorage.getItem('dld_token') || '';
       const h = { Authorization: `Bearer ${token}` };
-      const lj = await (await fetch('/api/links', { headers: h })).json();
-      const link = (lj.data || [])[0];
+      const dj = await (await fetch('/api/directory', { headers: h })).json();
+      const link = (dj.data || []).flatMap((g) => g.links || [])[0];
       if (!link) return { ok: false };
       const ar = await fetch(`/api/attachments/link/${link.uuid}`, { headers: h });
       return { ok: ar.ok, uuid: link.uuid, title: link.title };
@@ -218,9 +219,9 @@ test.describe('Link attachments', () => {
     }, info.uuid);
     await cleanup();
 
-    // Upload through the admin link editor.
+    // Upload through the admin link editor (select the same visible link by title).
     await page.goto('/admin/links');
-    await page.locator('.item-list .item-card').first().click();
+    await page.locator('.item-list .item-card', { hasText: info.title }).first().click();
     const manager = page.locator('.att-manager');
     await expect(manager).toBeVisible();
     const pdf = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<<>>\n%%EOF', 'latin1');

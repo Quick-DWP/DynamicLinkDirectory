@@ -164,12 +164,27 @@ export default function DirectoryPage() {
 
   const renderLink = (link: Link) => {
     if (theme === 'tiles') {
-      // Launcher style: the whole tile is the link.
+      // Launcher style: the whole tile is the link. The attachments button is a
+      // sibling (not nested in the anchor) pinned to the corner.
+      const n = link.attachment_count || 0;
       return (
-        <a key={link.uuid} className="link-tile" title={link.title} aria-label={`Open ${link.title}`} {...linkAnchorProps(link)}>
-          <span className="tile-icon"><LinkIcon link={link} size={30} favicons={autoFavicon} /></span>
-          <span className="tile-title">{link.title}</span>
-        </a>
+        <div className="link-tile-wrap" key={link.uuid}>
+          <a className="link-tile" title={link.title} aria-label={`Open ${link.title}`} {...linkAnchorProps(link)}>
+            <span className="tile-icon"><LinkIcon link={link} size={30} favicons={autoFavicon} /></span>
+            <span className="tile-title">{link.title}</span>
+          </a>
+          {n ? (
+            <button
+              type="button"
+              className="tile-attach"
+              title={`${n} attachment${n === 1 ? '' : 's'}`}
+              aria-label={`View ${n} attachment${n === 1 ? '' : 's'} for ${link.title}`}
+              onClick={() => setAttachFor({ uuid: link.uuid, title: link.title })}
+            >
+              <PaperclipIcon /><span className="attach-count">{n}</span>
+            </button>
+          ) : null}
+        </div>
       );
     }
 

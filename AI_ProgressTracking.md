@@ -227,6 +227,19 @@
 - Verified against a throwaway `PORT=9009` instance (same shared DB): 9-check API script — note saves/edits/clears, admin list returns it, directory payload has neither the `note` key nor the secret text. Added a committed Playwright regression test (`Devtools`) asserting the same + the editor field; all 6 green.
 - ACTION for the running app: restart the portal (`run.bat` / `pull-run.bat`) so the new backend loads — the `note` column already exists in the DB (patch ran), but the live `:9008` server is still on the old code until restarted.
 
+### 2026-07-20 — UX/UI audit fixes
+
+Acted on the audit findings:
+- **Dead CSS removed** (~890 lines of leftover template styles: login-select/combobox, list-table, audit-table, chip, yn, review, submit-btn, history, section-title, footer, etc.) + **consolidated the duplicate/conflicting `.field` and `.field span` rules**. CSS bundle 34.6 KB → 27.0 KB.
+- **Keyboard focus**: universal `:focus-visible` accent ring across custom controls; inputs get an accent border + soft ring on focus.
+- **Modal a11y**: new `useFocusTrap` hook — `AttachmentModal` and `ConfirmModal` now move focus in on open, trap Tab, close on Escape, and restore focus to the trigger on close. `ConfirmModal` is now portaled to `document.body` too.
+- **Tiles layout**: links with attachments now show a 📎-count corner badge that opens the preview modal (previously unreachable in Tiles). `link-tile-wrap` + `.tile-attach`.
+- **Sidebar layout**: the category menu column no longer stretches to full height (was a big empty navy block with few categories) — `align-self: start` + rounded left edge.
+- **EmojiPicker**: closes on Escape.
+- **Admin header**: tab-aware subtitle (no more "drag cards to reorder" on Settings/Account); Refresh shown only on list tabs (categories/links/users).
+- **Attachment upload**: per-file progress label ("Uploading 2/3…") instead of a static "Working…".
+- Verified with Playwright (10/10) + screenshots of tiles/sidebar/forms. Files: `index.css`, `useFocusTrap.ts` (new), `components/{AttachmentModal,ConfirmModal,EmojiPicker,AttachmentManager}.tsx`, `pages/{AdminPage,DirectoryPage}.tsx`, `Devtools/tests/ux.spec.js`.
+
 ### 2026-07-17 — Fix: non-ASCII attachment names + modal position
 
 - Bug: attachments with non-Latin filenames (e.g. Thai PDF) never previewed/downloaded — the raw endpoint put the raw name in `Content-Disposition`, and Node aborts the response on non-ASCII header values (fetch "terminated"). Fix: send an ASCII-sanitized `filename="…"` plus RFC 5987 `filename*=UTF-8''<pct-encoded>` for the real name. Also dropped the redundant manual `Content-Length` (Fastify sets it from the buffer). Verified the 261 KB Thai PDF now returns 200 with all bytes.

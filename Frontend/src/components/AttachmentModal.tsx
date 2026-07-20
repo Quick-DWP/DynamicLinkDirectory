@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { listAttachments, fetchAttachmentBlob, formatBytes, fileEmoji, type Attachment } from '../attachments';
+import { useFocusTrap } from '../useFocusTrap';
 import AttachmentPreview from './AttachmentPreview';
 
 type Props = { linkId: string; title: string; onClose: () => void; initialUuid?: string };
@@ -12,12 +13,7 @@ export default function AttachmentModal({ linkId, title, onClose, initialUuid }:
   const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  const dialogRef = useFocusTrap<HTMLDivElement>(onClose);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +46,7 @@ export default function AttachmentModal({ linkId, title, onClose, initialUuid }:
 
   return createPortal(
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card att-modal" role="dialog" aria-modal="true" aria-label={`Attachments for ${title}`} onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} tabIndex={-1} className="modal-card att-modal" role="dialog" aria-modal="true" aria-label={`Attachments for ${title}`} onClick={(e) => e.stopPropagation()}>
         <div className="att-modal-head">
           <div>
             <p className="eyebrow">Attachments</p>

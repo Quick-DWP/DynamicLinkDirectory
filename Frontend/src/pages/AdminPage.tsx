@@ -23,6 +23,16 @@ const ADMIN_TABS = [
 ] as const;
 type AdminTab = (typeof ADMIN_TABS)[number]['id'];
 
+// Tab-specific helper text so the header doesn't say "drag cards to reorder" on
+// tabs where nothing is draggable.
+const TAB_BLURB: Record<AdminTab, string> = {
+  settings: 'Set the title, logo, layout, theme, and who can view the site.',
+  categories: 'Group your links. Drag cards to reorder — changes appear on the Directory immediately.',
+  links: 'Add and organize links and their attachments. Drag cards to reorder — changes appear immediately.',
+  users: 'Create accounts and control who can view or manage the portal.',
+  account: 'Update your own password.',
+};
+
 const EMPTY_USER = { username: '', email: '', display_name: '', role: 'viewer', password: '', is_active: true };
 const EMPTY_CATEGORY = { name: '', description: '', icon: '', color: '', sort_order: 0, default_expanded: false, is_active: true };
 const EMPTY_LINK = { title: '', url: '', description: '', note: '', icon: '', category_id: '', sort_order: 0, open_in_new_tab: true, is_active: true };
@@ -434,13 +444,15 @@ function AdminConsole({ user, onSettingsSaved }: { user: AuthUser; onSettingsSav
         <div>
           <p className="eyebrow">Admin</p>
           <h2>Manage directory</h2>
-          <p className="muted-copy">Add and organize categories and links. Drag cards to reorder. Changes appear on the Directory page immediately.</p>
+          <p className="muted-copy">{TAB_BLURB[tab]}</p>
         </div>
         <div className="admin-bar">
           <span className="who">Signed in as {user.display_name || user.username}</span>
-          <div className="admin-bar-actions">
-            <button className="secondary-btn" onClick={() => void guard('global', loadAll)} disabled={busy}>Refresh</button>
-          </div>
+          {tab === 'categories' || tab === 'links' || tab === 'users' ? (
+            <div className="admin-bar-actions">
+              <button className="secondary-btn" onClick={() => void guard('global', loadAll)} disabled={busy}>Refresh</button>
+            </div>
+          ) : null}
         </div>
       </article>
 

@@ -1,4 +1,6 @@
-import { useEffect, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { useFocusTrap } from '../useFocusTrap';
 
 type Props = {
   title: string;
@@ -10,22 +12,19 @@ type Props = {
 };
 
 export default function ConfirmModal({ title, children, confirmLabel = 'Delete', busy, onConfirm, onCancel }: Props) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onCancel]);
+  const dialogRef = useFocusTrap<HTMLDivElement>(onCancel);
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-card" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} tabIndex={-1} className="modal-card" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <h3>{title}</h3>
         <div className="modal-body">{children}</div>
         <div className="button-row">
-          <button className="danger-btn" onClick={onConfirm} disabled={busy} autoFocus>{confirmLabel}</button>
+          <button className="danger-btn" onClick={onConfirm} disabled={busy}>{confirmLabel}</button>
           <button className="secondary-btn" onClick={onCancel} disabled={busy}>Cancel</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
